@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "tw": "npx @tailwindcss/cli -i ./src/input.css -o ./public/output.css --watch",
+    "tw": "npx @tailwindcss/cli -i ./src/input.css -o ./public/output.css --watch=always",
     "build": "npx @tailwindcss/cli -i ./src/input.css -o ./public/output.css --minify",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"

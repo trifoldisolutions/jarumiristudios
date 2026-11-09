@@ -2,6 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "inject-port",
+      "type": "shell",
+      "command": "node",
+      "args": ["f:\\trifoldi\\projects\\scripts\\inject-port.js", "${workspaceFolder}"],
+      "presentation": {
+        "panel": "shared",
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "npm run tw",
       "type": "shell",
       "command": "npm run tw",
@@ -18,6 +29,8 @@
       "label": "npm run dev",
       "type": "shell",
       "command": "npm run dev",
+      "dependsOn": ["inject-port"],
+      "dependsOrder": "sequence",
       "presentation": {
         "panel": "dedicated",
         "group": "dev",
