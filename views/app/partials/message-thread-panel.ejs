@@ -1,0 +1,423 @@
+<!-- Thread header -->
+<%
+  const headerThumbFile = (booking.uploadedFiles || []).find(f => f.mimetype && /^(video|image)\//i.test(f.mimetype));
+  const headerThumbSrc = headerThumbFile ? '/dashboard/uploads/' + headerThumbFile.storedName : null;
+  const headerThumbIsVideo = /^video\//i.test((headerThumbFile || {}).mimetype || '');
+%>
+<div class="flex items-center gap-3 px-5 py-4 border-b border-white/5 shrink-0">
+  <button type="button" onclick="showList()" class="lg:hidden text-gray-500 hover:text-white transition-colors shrink-0">
+    <iconify-icon icon="material-symbols-light:chevron-left" width="24" height="24"></iconify-icon>
+  </button>
+  <a href="/dashboard/booking/<%= booking._id %>" class="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
+    <div class="thread-icon shrink-0" style="width: 2.5rem; height: 2.5rem;">
+      <% if (headerThumbSrc && headerThumbIsVideo) { %>
+      <video src="<%= headerThumbSrc %>" muted preload="metadata" onerror="handleThreadThumbError(this)"></video>
+      <% } else if (headerThumbSrc) { %>
+      <img src="<%= headerThumbSrc %>" alt="" onerror="handleThreadThumbError(this)" />
+      <% } else { %>
+      <iconify-icon icon="material-symbols-light:chat" width="15" height="15" style="color:#f59e0b"></iconify-icon>
+      <% } %>
+    </div>
+    <div class="min-w-0">
+      <p class="font-mono text-amber-400 text-base font-semibold"><%= booking.crCode %></p>
+      <p class="text-xs text-gray-400 truncate"><%= booking.name %></p>
+    </div>
+  </a>
+  <% if (booking.filesDeleted) { %>
+  <span class="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/25 text-red-400 text-[11px] font-semibold">Deleted — files removed</span>
+  <% } else if (booking.archived) { %>
+  <span class="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-400 text-[11px] font-semibold">Archived</span>
+  <% } %>
+</div>
+
+<!-- Message list -->
+<div id="message-list" class="flex-1 min-h-0 overflow-y-auto px-5 py-5">
+  <%
+    function dayLabel(date) {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const diffDays = Math.round((startOfToday - startOfDay) / 86400000);
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays > 1 && diffDays < 7) return date.toLocaleDateString('en-US', { weekday: 'long' });
+      const opts = { month: 'long', day: 'numeric' };
+      if (date.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+      return date.toLocaleDateString('en-US', opts);
+    }
+    function attachmentIcon(mimetype) {
+      if (/^video\//i.test(mimetype)) return 'material-symbols-light:videocam';
+      if (/^audio\//i.test(mimetype)) return 'material-symbols-light:music-note-2';
+      return 'material-symbols-light:attach-file';
+    }
+    function truncateTaggedName(name) {
+      const dotIdx = name.lastIndexOf('.');
+      const hasExt = dotIdx > 0 && dotIdx < name.length - 1;
+      const ext = hasExt ? name.slice(dotIdx) : '';
+      const base = hasExt ? name.slice(0, dotIdx) : name;
+      if (base.length <= 8) return base + ext;
+      return base.slice(0, 4) + '…' + base.slice(-4) + ext;
+    }
+    function replyLabel(senderRole) {
+      if (senderRole === myRole) return 'You';
+      return myRole === 'client' ? 'Studio' : booking.name;
+    }
+    const thumbSpinnerSvg = '<svg class="thumb-spin-ring" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.25)" stroke-width="3"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="#fff" stroke-width="3" stroke-linecap="round"></path></svg>';
+    // Cancel button shown over an *eagerly*-loading attachment (the sender's own, or ones already
+    // marked downloaded, render straight into an <img>/<video> src instead of going through the
+    // lazy tap-to-download flow) — clicking it aborts that load via window.cancelEagerMediaLoad.
+    function thumbLoadingOverlayHtml(contextSize) {
+      return '<button type="button" class="thumb-loading-overlay thumb-cancel-btn" ' +
+        'onclick="event.preventDefault(); event.stopPropagation(); window.cancelEagerMediaLoad(this.closest(\'[data-download-url]\'), \'' + contextSize + '\');" title="Stop loading">' +
+        '<span class="thumb-btn-badge">' + thumbSpinnerSvg +
+        '<iconify-icon icon="material-symbols-light:close" width="16" height="16" class="thumb-cancel-icon"></iconify-icon></span></button>';
+    }
+    // Once a project's files are wiped (see services/storage.js archiveAndWipeBookingFiles), nothing is
+    // fetchable anymore — skip the lazy tap-to-download affordance entirely so the thumbnail goes
+    // straight to the eager <img>/<video> path, whose onerror surfaces the "no longer available"
+    // placeholder immediately instead of implying a download that can only ever fail.
+    const filesGone = !!booking.filesDeleted;
+    let lastDayKey = null;
+  %>
+  <% messages.forEach(m => {
+    const createdAt = new Date(m.createdAt);
+    const dayKey = createdAt.toDateString();
+    const showDaySeparator = dayKey !== lastDayKey;
+    lastDayKey = dayKey;
+  %>
+  <% if (showDaySeparator) { %>
+  <div class="day-separator" data-day-key="<%= dayKey %>"><span><%= dayLabel(createdAt) %></span></div>
+  <% } %>
+  <% const isMine = m.senderRole === myRole; %>
+  <% const msgAttachments = m.deleted ? [] : ((m.attachments && m.attachments.length) ? m.attachments : (m.attachment && m.attachment.storedName ? [m.attachment] : [])); %>
+  <% const attTypeLabel = (mt) => /^video\//i.test(mt) ? 'Video' : /^audio\//i.test(mt) ? 'Audio' : /^image\//i.test(mt) ? 'Image' : 'File'; %>
+  <% const replyAttachmentSummary = msgAttachments.length ? (msgAttachments.length === 1 ? attTypeLabel(msgAttachments[0].mimetype) : msgAttachments.length + ' files') : ''; %>
+  <div class="bubble-row <%= isMine ? 'mine' : 'theirs' %> <%= m.deleted ? 'deleted' : '' %>" data-message-id="<%= m._id %>" data-reply-body="<%= m.deleted ? '' : (m.body || '') %>" data-reply-attachment="<%= replyAttachmentSummary %>">
+    <% if (!m.deleted) { %>
+    <% if (isMine) { %>
+    <div class="bubble-actions">
+      <button type="button" class="bubble-action-btn" onclick="window.deleteMessage('<%= m._id %>')" title="Delete message">
+        <iconify-icon icon="material-symbols-light:delete-outline" width="18" height="18"></iconify-icon>
+      </button>
+      <button type="button" class="bubble-action-btn edit-action-btn" onclick="window.editMessage('<%= m._id %>')" title="Edit">
+        <iconify-icon icon="material-symbols-light:edit-rounded" width="18" height="18"></iconify-icon>
+      </button>
+      <button type="button" class="bubble-action-btn reply-action-btn" onclick="window.replyToMessage('<%= m._id %>')" title="Reply">
+        <iconify-icon icon="material-symbols-light:arrow-top-left" width="18" height="18"></iconify-icon>
+      </button>
+    </div>
+    <% } else { %>
+    <button type="button" class="msg-select-radio" onclick="window.selectMessage('<%= m._id %>')" title="Select">
+      <iconify-icon icon="material-symbols-light:circle-outline" width="20" height="20"></iconify-icon>
+    </button>
+    <% } %>
+    <% } %>
+    <div class="bubble-col">
+      <div class="bubble">
+        <% const showTick = m.senderRole === myRole; %>
+        <% if (m.deleted) { %>
+        <span class="bubble-deleted-text">This message was deleted</span><span class="time-spacer <%= showTick ? 'with-tick' : '' %>"></span>
+        <% } else { %>
+        <% // Mongoose always hydrates a single-nested-schema path as an object (never undefined) on
+           // a non-.lean() document, so `m.replyTo` alone is truthy even for non-replies — check a
+           // real sub-field instead.
+        %>
+        <% if (m.replyTo && m.replyTo.messageId) { %>
+        <div class="reply-quote" onclick="window.scrollToMessage('<%= m.replyTo.messageId %>')">
+          <span class="reply-quote-sender"><%= replyLabel(m.replyTo.senderRole) %></span>
+          <span class="reply-quote-text"><%= m.replyTo.body || (m.replyTo.attachmentSummary ? '📎 ' + m.replyTo.attachmentSummary : '') %></span>
+        </div>
+        <% } %>
+        <% msgAttachments.forEach(att => {
+          const isImage = /^image\//i.test(att.mimetype);
+          const isVideo = /^video\//i.test(att.mimetype);
+          const isAudio = /^audio\//i.test(att.mimetype);
+          const isTagged = att.folder && att.folder !== 'chat';
+          const attUrl = attachmentBasePath + '/' + att.storedName;
+          const isLazy = !showTick && (isImage || isVideo) && !att.downloaded;
+        %>
+        <% if (filesGone) { %>
+        <% if (isTagged) { %>
+        <span class="tagged-inline-badge" style="opacity:0.55;" title="<%= att.originalName %> — no longer available">
+          <span class="tagged-inline-thumb">
+            <iconify-icon icon="material-symbols-light:broken-image-outline" width="13" height="13" style="color:rgba(255,255,255,0.4);"></iconify-icon>
+          </span>
+          <span><%= truncateTaggedName(att.originalName) %></span>
+        </span>
+        <% } else { %>
+        <span class="attachment-badge" title="<%= att.originalName %> — no longer available">
+          <span class="badge-thumb badge-thumb-preview">
+            <span class="thumb-error-overlay">
+              <iconify-icon icon="material-symbols-light:broken-image-outline" width="26" height="26"></iconify-icon>
+              <span class="thumb-error-text">This file is no longer available</span>
+            </span>
+          </span>
+        </span>
+        <% } %>
+        <% } else if (isTagged) { %>
+        <a class="tagged-inline-badge" href="<%= attUrl %>" download="<%= att.originalName %>" title="<%= att.originalName %>"
+          onclick="return window.openFileViewer(event, this)"
+          data-stored-name="<%= att.storedName %>" data-original-name="<%= att.originalName %>"
+          data-mimetype="<%= att.mimetype %>" data-size="<%= att.size %>">
+          <span class="tagged-inline-thumb<%= isLazy ? ' lazy-attachment' : '' %>" data-download-url="<%= attUrl %>" data-mimetype="<%= att.mimetype %>" data-icon-size="13"<% if (isLazy && att.blurDataUrl) { %> style="background-image:url('<%= att.blurDataUrl %>')"<% } %>>
+            <% if (isLazy) { %>
+            <button type="button" class="thumb-download-btn" onclick="event.preventDefault(); event.stopPropagation(); window.startAttachmentDownload(this.closest('[data-download-url]'));">
+              <span class="thumb-btn-badge"><iconify-icon icon="material-symbols-light:download" width="18" height="18"></iconify-icon></span>
+            </button>
+            <% } else if (isImage) { %>
+            <img src="<%= attUrl %>" alt="" onload="this.closest('.tagged-inline-thumb').classList.add('media-loaded')" onerror="window.handleMediaLoadError(this, 13)" />
+            <%- thumbLoadingOverlayHtml(13) %>
+            <% } else if (isVideo) { %>
+            <video src="<%= attUrl %>" muted preload="metadata" onloadeddata="this.closest('.tagged-inline-thumb').classList.add('media-loaded')" onerror="window.handleMediaLoadError(this, 13)"></video>
+            <%- thumbLoadingOverlayHtml(13) %>
+            <% } else if (isAudio) { %>
+            <iconify-icon icon="material-symbols-light:music-note-2" width="13" height="13" style="color:#f59e0b;"></iconify-icon>
+            <% } else { %>
+            <iconify-icon icon="<%= attachmentIcon(att.mimetype) %>" width="13" height="13"></iconify-icon>
+            <% } %>
+          </span>
+          <span><%= truncateTaggedName(att.originalName) %></span>
+        </a>
+        <% } else { %>
+        <a class="attachment-badge" href="<%= attUrl %>" download="<%= att.originalName %>" title="<%= att.originalName %>"
+          onclick="return window.openFileViewer(event, this)"
+          data-stored-name="<%= att.storedName %>" data-original-name="<%= att.originalName %>"
+          data-mimetype="<%= att.mimetype %>" data-size="<%= att.size %>">
+          <span class="badge-thumb badge-thumb-preview <%= isAudio ? 'badge-thumb-audio' : '' %><%= isLazy ? ' lazy-attachment' : '' %>" data-download-url="<%= attUrl %>" data-mimetype="<%= att.mimetype %>" data-icon-size="28"<% if (isLazy && att.blurDataUrl) { %> style="background-image:url('<%= att.blurDataUrl %>')"<% } %>>
+            <% if (isLazy) { %>
+            <button type="button" class="thumb-download-btn" onclick="event.preventDefault(); event.stopPropagation(); window.startAttachmentDownload(this.closest('[data-download-url]'));">
+              <span class="thumb-btn-badge"><iconify-icon icon="material-symbols-light:download" width="32" height="32"></iconify-icon></span>
+            </button>
+            <% } else if (isImage) { %>
+            <img src="<%= attUrl %>" alt="" onload="this.closest('.badge-thumb').classList.add('media-loaded')" onerror="window.handleMediaLoadError(this, 28)" />
+            <%- thumbLoadingOverlayHtml(28) %>
+            <% } else if (isVideo) { %>
+            <video src="<%= attUrl %>" muted preload="metadata" onloadeddata="this.closest('.badge-thumb').classList.add('media-loaded')" onerror="window.handleMediaLoadError(this, 28)"></video>
+            <%- thumbLoadingOverlayHtml(28) %>
+            <% } else if (isAudio) { %>
+            <iconify-icon icon="material-symbols-light:music-note-2" width="32" height="32" style="color:#f59e0b;"></iconify-icon>
+            <% } else { %>
+            <iconify-icon icon="<%= attachmentIcon(att.mimetype) %>" width="32" height="32"></iconify-icon>
+            <% } %>
+          </span>
+        </a>
+        <% } %>
+        <% }) %>
+        <% if (m.body) { %>
+        <span class="bubble-body-text"><%= m.body %></span><span class="time-spacer <%= showTick ? 'with-tick' : '' %>"></span>
+        <% } %>
+        <% } %>
+        <span class="bubble-time <%= (m.body || m.deleted) ? 'corner' : 'block' %>">
+          <% if (m.edited && !m.deleted) { %>
+          <span class="edited-label">edited</span>
+          <% } %>
+          <span class="bubble-time-text"><%= createdAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) %></span>
+          <% if (showTick) { %>
+          <iconify-icon icon="<%= m.read ? 'material-symbols:done-all' : 'material-symbols:check' %>" width="15" height="15" class="tick <%= m.read ? 'tick-read' : '' %>"></iconify-icon>
+          <% } %>
+        </span>
+      </div>
+    </div>
+    <% if (!m.deleted) { %>
+    <% if (isMine) { %>
+    <button type="button" class="msg-select-radio" onclick="window.selectMessage('<%= m._id %>')" title="Select">
+      <iconify-icon icon="material-symbols-light:circle-outline" width="20" height="20"></iconify-icon>
+    </button>
+    <% } else { %>
+    <div class="bubble-actions">
+      <button type="button" class="bubble-action-btn reply-action-btn" onclick="window.replyToMessage('<%= m._id %>')" title="Reply">
+        <iconify-icon icon="material-symbols-light:arrow-top-left" width="18" height="18"></iconify-icon>
+      </button>
+    </div>
+    <% } %>
+    <% } %>
+  </div>
+  <% }) %>
+  <% if (!messages.length) { %>
+  <div id="message-empty-state" class="h-full flex flex-col items-center justify-center text-center px-6">
+    <div class="w-16 h-16 rounded-full bg-white/3 border border-white/8 flex items-center justify-center mb-4">
+      <iconify-icon icon="material-symbols-light:<%= booking.chatUnlocked ? 'chat-bubble-outline' : 'lock-outline' %>" width="28" height="28" class="text-gray-600"></iconify-icon>
+    </div>
+    <% if (!booking.chatUnlocked) { %>
+    <p class="text-sm font-semibold text-gray-300">Chat is locked</p>
+    <p class="text-xs text-gray-600 mt-1 max-w-60">Chat opens once this project is accepted.</p>
+    <% } else { %>
+    <p class="text-sm font-semibold text-gray-300">No messages yet</p>
+    <p class="text-xs text-gray-600 mt-1 max-w-60">Send a message to say hello and get the conversation started.</p>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+
+<!-- Attach file modal -->
+<div id="attach-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/60 px-4">
+  <div class="bg-[#111111] border border-white/10 rounded-lg w-full max-w-md max-h-[75vh] flex flex-col">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
+      <h3 class="text-sm font-semibold text-white">Attach a file</h3>
+      <button type="button" id="attach-modal-close" class="text-gray-500 hover:text-white transition-colors">
+        <iconify-icon icon="material-symbols-light:close" width="18" height="18"></iconify-icon>
+      </button>
+    </div>
+    <div class="p-4 border-b border-white/5 shrink-0">
+      <button type="button" id="browse-files-btn" class="w-full h-11 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-sm text-gray-300 transition-colors">
+        <iconify-icon icon="material-symbols-light:cloud-upload" width="18" height="18"></iconify-icon>
+        Browse files
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-5">
+      <%
+        const mediaGroups = [];
+        if (booking.uploadedFiles && booking.uploadedFiles.length) {
+          mediaGroups.push({ label: 'Uploaded files', source: 'uploaded', base: '/dashboard/uploads', files: booking.uploadedFiles });
+        }
+        if (booking.deliverablesUnlocked && booking.deliverableFiles && booking.deliverableFiles.length) {
+          mediaGroups.push({ label: 'Final deliverables', source: 'deliverable', base: '/dashboard/deliverables', files: booking.deliverableFiles });
+        }
+      %>
+      <% if (!mediaGroups.length) { %>
+      <p class="text-xs text-gray-600">No project files to tag yet.</p>
+      <% } %>
+      <% mediaGroups.forEach(group => { %>
+      <div>
+        <h4 class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 mb-2"><%= group.label %></h4>
+        <div class="space-y-1">
+          <% group.files.forEach(f => {
+            const isImage = /^image\//i.test(f.mimetype);
+            const isVideo = /^video\//i.test(f.mimetype);
+            const isAudio = /^audio\//i.test(f.mimetype);
+            const thumbUrl = group.base + '/' + f.storedName;
+            const sizeLabel = f.size < 1024*1024 ? (f.size/1024).toFixed(1)+' KB' : (f.size/1024/1024).toFixed(1)+' MB';
+          %>
+          <button type="button" class="media-pick-btn w-full flex items-center gap-3 px-2.5 py-2 rounded-md hover:bg-white/5 transition-colors text-left"
+            data-file-id="<%= f._id %>" data-source="<%= group.source %>"
+            data-original-name="<%= f.originalName %>" data-mimetype="<%= f.mimetype %>" data-thumb="<%= thumbUrl %>">
+            <span class="badge-thumb badge-thumb-lg <%= isAudio ? 'badge-thumb-audio' : '' %>">
+              <% if (isImage) { %>
+              <img src="<%= thumbUrl %>" alt="" />
+              <% } else if (isVideo) { %>
+              <video src="<%= thumbUrl %>" muted preload="metadata"></video>
+              <% } else if (isAudio) { %>
+              <iconify-icon icon="material-symbols-light:music-note-2" width="18" height="18" style="color:#f59e0b;"></iconify-icon>
+              <% } else { %>
+              <iconify-icon icon="<%= attachmentIcon(f.mimetype) %>" width="18" height="18"></iconify-icon>
+              <% } %>
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm text-gray-300 truncate"><%= f.originalName %></span>
+              <span class="block text-xs text-gray-600"><%= sizeLabel %></span>
+            </span>
+          </button>
+          <% }) %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <div class="p-4 border-t border-white/5 shrink-0">
+      <button type="button" id="attach-modal-done" class="w-full h-11 flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-black text-sm font-bold rounded-md transition-colors">
+        Done
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- File viewer modal -->
+<%
+  // Every file ever sent in this chat, plus the project's own uploaded files, deduped by
+  // storedName (a tagged attachment is both — keep the project-files URL for those).
+  const viewerSeenStoredNames = new Set();
+  const viewerFiles = [];
+  (booking.uploadedFiles || []).forEach(f => {
+    if (viewerSeenStoredNames.has(f.storedName)) return;
+    viewerSeenStoredNames.add(f.storedName);
+    viewerFiles.push({ storedName: f.storedName, originalName: f.originalName, mimetype: f.mimetype, size: f.size, url: '/dashboard/uploads/' + f.storedName });
+  });
+  messages.forEach(m => {
+    if (m.deleted) return;
+    const atts = (m.attachments && m.attachments.length) ? m.attachments : (m.attachment && m.attachment.storedName ? [m.attachment] : []);
+    const isMine = m.senderRole === myRole;
+    atts.forEach(att => {
+      if (viewerSeenStoredNames.has(att.storedName)) return;
+      viewerSeenStoredNames.add(att.storedName);
+      const isTagged = att.folder && att.folder !== 'chat';
+      const isImage = /^image\//i.test(att.mimetype);
+      const isVideo = /^video\//i.test(att.mimetype);
+      viewerFiles.push({
+        storedName: att.storedName, originalName: att.originalName, mimetype: att.mimetype, size: att.size,
+        url: isTagged ? '/dashboard/uploads/' + att.storedName : attachmentBasePath + '/' + att.storedName,
+        // Tagged files point at the always-accessible project-files URL above, so they're never
+        // gated — only a plain chat attachment the recipient hasn't tapped-to-download yet is lazy.
+        lazy: !isTagged && !isMine && (isImage || isVideo) && !att.downloaded,
+        blurDataUrl: att.blurDataUrl || null,
+      });
+    });
+  });
+%>
+<div id="file-viewer-modal" class="hidden fixed inset-0 z-50 items-center justify-center p-6" style="background:rgba(0,0,0,0.88);backdrop-filter:blur(6px);"
+  onclick="if (event.target === this) window.closeFileViewer()"
+  data-files="<%- JSON.stringify(viewerFiles).replace(/"/g, '&quot;') %>">
+  <div class="viewer-container">
+    <div class="viewer-header">
+      <span id="viewer-filename" class="viewer-filename"></span>
+      <button type="button" onclick="window.closeFileViewer()" class="viewer-close-btn">
+        <iconify-icon icon="material-symbols-light:close" width="20" height="20"></iconify-icon>
+      </button>
+    </div>
+    <div class="viewer-body">
+      <div class="viewer-player-wrap">
+        <div id="viewer-player" class="viewer-player"></div>
+        <div id="viewer-info-bar" class="viewer-info-bar"></div>
+      </div>
+      <div class="viewer-file-panel">
+        <div class="viewer-file-panel-header">Project files</div>
+        <div id="viewer-file-grid" class="viewer-file-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Composer -->
+<% const composerLocked = !booking.chatUnlocked || booking.chatBlocked; %>
+<% const composerPlaceholder = !booking.chatUnlocked
+     ? 'Chat opens once this project is accepted.'
+     : booking.chatBlocked ? "You've been restricted from sending messages." : 'Write a message...'; %>
+<% if (booking.chatBlocked) { %>
+<div id="chat-blocked-banner" class="px-5 py-2.5 border-t border-white/5 bg-red-500/5 text-xs text-red-400 text-center shrink-0">
+  You've been restricted from sending messages on this project.
+</div>
+<% } %>
+<form id="composer" class="flex flex-col gap-2 px-5 pt-4 border-t border-white/5 shrink-0" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))" enctype="multipart/form-data" data-post-path="<%= postPath %>" data-attachment-base="<%= attachmentBasePath %>" data-my-role="<%= myRole %>" data-chat-unlocked="<%= booking.chatUnlocked ? 'true' : 'false' %>" data-chat-blocked="<%= booking.chatBlocked ? 'true' : 'false' %>" data-status-bucket="<%= booking.status === 'completed' ? 'completed' : 'active' %>" data-thumb-src="<%= headerThumbSrc || '' %>" data-thumb-is-video="<%= headerThumbIsVideo ? 'true' : 'false' %>">
+  <div id="reply-preview-bar" class="hidden items-center gap-2 px-3 py-2 rounded-md bg-white/5 border border-white/10">
+    <iconify-icon icon="material-symbols-light:arrow-top-left" width="16" height="16" style="color:#f59e0b;" class="shrink-0"></iconify-icon>
+    <div class="min-w-0 flex-1">
+      <p id="reply-preview-sender" class="text-xs font-semibold text-amber-400 leading-tight"></p>
+      <p id="reply-preview-text" class="text-xs text-gray-400 truncate leading-tight"></p>
+    </div>
+    <button type="button" id="reply-preview-close" class="text-gray-500 hover:text-white transition-colors shrink-0" title="Cancel reply">
+      <iconify-icon icon="material-symbols-light:close" width="16" height="16"></iconify-icon>
+    </button>
+  </div>
+  <div id="edit-preview-bar" class="hidden items-center gap-2 px-3 py-2 rounded-md bg-white/5 border border-white/10">
+    <iconify-icon icon="material-symbols-light:edit-rounded" width="16" height="16" style="color:#f59e0b;" class="shrink-0"></iconify-icon>
+    <p class="text-xs font-semibold text-amber-400 flex-1">Editing message</p>
+    <button type="button" id="edit-preview-close" class="text-gray-500 hover:text-white transition-colors shrink-0" title="Cancel edit">
+      <iconify-icon icon="material-symbols-light:close" width="16" height="16"></iconify-icon>
+    </button>
+  </div>
+  <div id="attachment-preview-list" class="hidden flex-wrap gap-2"></div>
+  <div class="flex items-end gap-2">
+    <button type="button" id="attach-btn" <%= composerLocked ? 'disabled' : '' %>
+      class="h-12 w-12 flex items-center justify-center text-gray-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/10 rounded-md transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/4 disabled:hover:text-gray-300">
+      <iconify-icon icon="material-symbols-light:attach-file" width="20" height="20"></iconify-icon>
+    </button>
+    <input type="file" id="attachment-input" name="attachments" multiple class="hidden" <%= composerLocked ? 'disabled' : '' %> />
+    <textarea id="body-input" rows="1" placeholder="<%= composerPlaceholder %>" <%= composerLocked ? 'disabled' : '' %>
+      class="flex-1 h-12 bg-white/4 border border-white/10 rounded-md px-4 py-2.5 text-sm text-white outline-none resize-none disabled:opacity-40 disabled:cursor-not-allowed"
+      style="max-height:120px;"></textarea>
+    <span class="shrink-0<%= composerLocked ? ' cursor-not-allowed' : '' %>">
+      <button type="submit" <%= composerLocked ? 'disabled' : '' %>
+        class="h-12 bg-amber-400 text-black text-sm font-bold px-4 py-2.5 rounded-md hover:bg-amber-300 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-amber-400">
+        Send
+      </button>
+    </span>
+  </div>
+</form>

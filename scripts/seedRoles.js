@@ -1,4 +1,4 @@
-// One-time seed: inserts the two roles that used to be hardcoded in views/index.ejs as real
+// One-time seed: inserts the two roles that used to be hardcoded in views/public/index.ejs as real
 // Role documents, so the DB-driven careers section isn't empty on first load. Safe to re-run —
 // skips any title that already exists.
 require("dotenv").config();

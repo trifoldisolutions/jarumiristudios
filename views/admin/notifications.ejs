@@ -46,7 +46,7 @@
 </head>
 <body class="bg-[#080808] text-gray-100 antialiased min-h-screen">
 
-  <%- include('_sidebar', { active: 'notifications' }) %>
+  <%- include('partials/sidebar', { active: 'notifications' }) %>
 
   <div class="lg:ml-55 min-h-screen">
   <div class="lg:hidden h-14"></div>
@@ -119,7 +119,7 @@
 
   </div>
 
-  <%- include('../_toast') %>
-  <%- include('_notif-poll') %>
+  <%- include('../partials/toast') %>
+  <%- include('partials/notif-poll') %>
 </body>
 </html>

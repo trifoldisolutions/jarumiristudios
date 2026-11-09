@@ -37,7 +37,7 @@
 </head>
 <body class="bg-[#080808] text-gray-100 antialiased min-h-screen">
 
-  <%- include('_sidebar', { active: 'dashboard' }) %>
+  <%- include('partials/sidebar', { active: 'dashboard' }) %>
 
   <div class="lg:ml-55 min-h-screen">
   <div class="lg:hidden h-14"></div>
@@ -95,9 +95,9 @@
 
   </div>
 
-  <%- include('../_toast') %>
-  <%- include('_message-poll') %>
-  <%- include('_notif-poll') %>
+  <%- include('../partials/toast') %>
+  <%- include('partials/message-poll') %>
+  <%- include('partials/notif-poll') %>
   <% if (locals.claimError) { %>
   <script>showToast('Already claimed', <%- JSON.stringify(claimError) %>, 'error');</script>
   <% } %>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gallery | Jarumiri Studios</title>
+  <link rel="icon" type="image/png" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="apple-touch-icon" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="stylesheet" href="/output.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .brand { font-family: 'Syne', sans-serif; }
+
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; min-height: 40px; border-radius: 6px;
+      font-size: 13.5px; color: #9ca3af; font-weight: 500;
+      text-decoration: none; transition: all 0.15s;
+    }
+    .sidebar-link:hover { color: #e5e7eb; background: rgba(255,255,255,0.045); }
+    .sidebar-link.active { color: #fff; background: rgba(255,255,255,0.07); }
+    .sidebar-link.danger:hover { color: #f87171; background: rgba(239,68,68,0.06); }
+
+    .status-pill {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 9999px;
+      font-size: 10.5px; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap;
+    }
+    .status-pending     { background: rgba(245,158,11,0.1);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .status-in-review   { background: rgba(99,102,241,0.1);  color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+    .status-accepted    { background: rgba(34,197,94,0.1);   color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+    .status-declined    { background: rgba(239,68,68,0.1);   color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .status-in-progress { background: rgba(59,130,246,0.1);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .status-completed   { background: rgba(16,185,129,0.1);  color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+
+    /* ── Project card ── */
+    .project-card {
+      aspect-ratio: 1 / 1;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.07);
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+      background: #000;
+    }
+    .project-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+
+    /* Level 1 — fills the whole card */
+    .card-l1 {
+      position: absolute;
+      inset: 0;
+    }
+    .card-l1 video, .card-l1 img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .card-l1-placeholder {
+      width: 100%; height: 100%;
+      background: #f59e0b;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Level 2 — file strip floating over the bottom of the square */
+    .card-l2 {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 64px;
+      padding: 0 10px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .l2-thumb {
+      flex-shrink: 0;
+      width: 48px; height: 48px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .l2-thumb img, .l2-thumb video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .l2-thumb-audio {
+      background: rgba(255,255,255,0.3);
+      border-color: rgba(255,255,255,0.22);
+    }
+    .l2-more {
+      font-size: 11px; color: rgba(255,255,255,0.55); white-space: nowrap;
+      flex-shrink: 0; margin-left: 2px;
+    }
+
+    /* ── Flat file grid (single-type filter view) ── */
+    .file-tile { cursor: pointer; }
+    .file-tile-media {
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: #000;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .file-tile:hover .file-tile-media { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+    .file-tile-media video, .file-tile-media img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .file-tile-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.04);
+    }
+    .file-tile-caption { margin-top: 6px; }
+    .file-tile-name {
+      font-size: 12px; color: #d1d5db;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .file-tile-code { font-size: 10px; color: #6b7280; font-family: 'Courier New', monospace; margin-top: 1px; }
+
+    /* ── Modal ── */
+    #gallery-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.88);
+      backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+      padding: 28px;
+      box-sizing: border-box;
+    }
+    #gallery-modal.open { display: flex; }
+
+    .modal-container {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 12px;
+      width: 100%; max-width: 1140px;
+      height: 100%; max-height: 740px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      flex-shrink: 0;
+    }
+
+    .modal-body {
+      display: flex; flex: 1; overflow: hidden;
+    }
+
+    /* Left: player */
+    .modal-player-wrap {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    }
+    #modal-player {
+      flex: 1;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
+    }
+    #modal-player video { max-width: 100%; max-height: 100%; display: block; }
+    #modal-player img  { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
+    .modal-info-bar {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Right: file grid panel */
+    .modal-file-panel {
+      width: 260px; flex-shrink: 0;
+      border-left: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-file-panel-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    #modal-file-grid {
+      flex: 1; overflow-y: auto;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      align-content: start;
+    }
+    .modal-thumb {
+      aspect-ratio: 1 / 1;
+      border-radius: 6px; overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.04);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s;
+    }
+    .modal-thumb:hover { border-color: rgba(255,255,255,0.2); }
+    .modal-thumb.selected { border-color: #f59e0b; }
+    .modal-thumb img, .modal-thumb video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+
+    @media (max-width: 767px) {
+      #gallery-modal { padding: 0; }
+      .modal-container { border-radius: 0; max-width: 100%; max-height: 100%; }
+      .modal-body { flex-direction: column; }
+      .modal-file-panel {
+        width: 100%; height: 180px;
+        border-left: none; border-top: 1px solid rgba(255,255,255,0.07);
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#080808] text-gray-100 antialiased">
+
+  <!-- Mobile top bar -->
+  <header class="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0d0d0d] border-b border-white/5 flex items-center gap-2 px-4">
+    <button onclick="toggleSidebar()" class="h-12 w-12 flex items-center justify-center text-white transition-colors cursor-pointer">
+      <iconify-icon icon="material-symbols-light:menu" width="22" height="22"></iconify-icon>
+    </button>
+    <span class="brand text-[15px] font-bold text-white leading-none">Jarumiri Studios<span class="text-amber-400">.</span></span>
+  </header>
+
+  <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-screen w-55 bg-[#0d0d0d] border-r border-white/5 z-40 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-16.25 flex items-center px-5 border-b border-white/5 shrink-0">
+      <span class="brand text-[15px] font-bold text-white">Jarumiri Studios<span class="text-amber-400">.</span></span>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <a href="/dashboard" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:grid-view" width="20" height="20"></iconify-icon>
+        Overview
+      </a>
+      <a href="/dashboard/gallery" class="sidebar-link active">
+        <iconify-icon icon="material-symbols-light:photo-library" width="20" height="20"></iconify-icon>
+        Gallery
+      </a>
+      <a href="/dashboard/messages" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:chat" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Messages</span>
+        <% if (locals.unreadMessageCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadMessageCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/notifications" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:notifications" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Notifications</span>
+        <% if (locals.unreadCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/invoices" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:receipt-long-outline" width="20" height="20"></iconify-icon>
+        Invoices
+      </a>
+      <a href="/dashboard/account" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:person" width="20" height="20"></iconify-icon>
+        Account
+      </a>
+    </nav>
+
+    <div class="px-3 pb-4 border-t border-white/5 shrink-0 space-y-1">
+      <a href="/dashboard/new"
+        class="flex items-center gap-2.5 w-full px-3 min-h-10 rounded-md bg-amber-400 text-black text-[13.5px] font-bold hover:bg-amber-300 transition-colors">
+        <iconify-icon icon="material-symbols-light:add" width="20" height="20"></iconify-icon>
+        New project
+      </a>
+      <a href="https://t.me/jarumiri" target="_blank" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:forum" width="20" height="20"></iconify-icon>
+        Support
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="lg:ml-55 min-h-screen">
+    <div class="lg:hidden h-14"></div>
+
+    <main class="px-4 pt-3 pb-4 lg:px-12.5 lg:pt-6 lg:pb-12.5">
+
+      <% const totalFiles = (projects || []).reduce((s, p) => s + (p.uploadedFiles ? p.uploadedFiles.length : 0), 0); %>
+
+      <!-- Gallery section -->
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="hidden lg:block text-sm font-semibold text-white">Gallery</h2>
+        <% if (projects && projects.length > 0) { %>
+        <div class="flex items-center gap-4 text-[11px] font-semibold uppercase tracking-widest">
+          <span class="text-gray-400"><%= projects.length %> project<%= projects.length !== 1 ? 's' : '' %></span>
+          <span class="text-gray-400"><%= totalFiles %> file<%= totalFiles !== 1 ? 's' : '' %></span>
+        </div>
+        <% } %>
+      </div>
+
+      <% if (!projects || projects.length === 0) { %>
+      <div class="text-center py-20 border border-white/5 rounded-lg bg-white/1">
+        <div class="w-11 h-11 rounded-md bg-white/3 border border-white/8 flex items-center justify-center mx-auto mb-4">
+          <iconify-icon icon="material-symbols-light:photo-library" width="22" height="22" class="text-gray-700"></iconify-icon>
+        </div>
+        <p class="text-gray-600 text-sm mb-3">No files submitted yet.</p>
+        <a href="/dashboard/new" class="text-amber-400 text-sm hover:text-amber-300 transition-colors font-medium inline-flex items-center gap-1">Start a project <iconify-icon icon="material-symbols-light:arrow-right-alt" width="16" height="16"></iconify-icon></a>
+      </div>
+
+      <% } else { %>
+
+      <!-- Filter -->
+      <div class="mb-6">
+        <div class="relative flex-shrink-0" id="filetype-dropdown">
+          <button type="button" id="filetype-btn" onclick="toggleFiletypeDropdown()"
+            class="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-md px-4 py-2.5 text-sm text-gray-300 hover:border-white/20 hover:text-white transition-colors whitespace-nowrap">
+            <iconify-icon id="filetype-icon" icon="material-symbols-light:select-all" width="15" height="15"></iconify-icon>
+            <span id="filetype-label">All</span>
+            <svg id="filetype-chevron" class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div id="filetype-menu"
+            class="hidden absolute left-0 top-full mt-1.5 z-50 min-w-[160px] bg-[#111] border border-white/10 rounded-md overflow-hidden shadow-xl">
+            <button type="button" class="filetype-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.05] hover:text-white transition-colors" data-value="all" data-icon="material-symbols-light:select-all" onclick="applyFilter(this)">
+              <iconify-icon icon="material-symbols-light:select-all" width="15" height="15"></iconify-icon> All
+            </button>
+            <button type="button" class="filetype-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="video" data-icon="material-symbols-light:videocam" onclick="applyFilter(this)">
+              <iconify-icon icon="material-symbols-light:videocam" width="15" height="15"></iconify-icon> Video
+            </button>
+            <button type="button" class="filetype-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="audio" data-icon="material-symbols-light:music-note" onclick="applyFilter(this)">
+              <iconify-icon icon="material-symbols-light:music-note" width="15" height="15"></iconify-icon> Audio
+            </button>
+            <button type="button" class="filetype-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="image" data-icon="material-symbols-light:image" onclick="applyFilter(this)">
+              <iconify-icon icon="material-symbols-light:image" width="15" height="15"></iconify-icon> Image
+            </button>
+            <button type="button" class="filetype-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="other" data-icon="material-symbols-light:attach-file" onclick="applyFilter(this)">
+              <iconify-icon icon="material-symbols-light:attach-file" width="15" height="15"></iconify-icon> Other
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3" id="project-grid">
+        <% projects.forEach((project, i) => {
+          const firstVideo = project.uploadedFiles.find(f => /^video\//i.test(f.mimetype));
+          const otherFiles = project.uploadedFiles.filter(f => f !== firstVideo);
+          const l2Show   = otherFiles.length > 8 ? otherFiles.slice(0, 3) : otherFiles;
+          const l2More   = otherFiles.length > 8 ? otherFiles.length - 3 : 0;
+          const dateStr = new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        %>
+        <div class="project-card"
+          data-index="<%= i %>"
+          onclick="openModal(<%= i %>)">
+
+          <!-- Level 1: main visual -->
+          <div class="card-l1">
+            <% if (firstVideo) { %>
+            <video src="/dashboard/uploads/<%= firstVideo.storedName %>" muted preload="auto" class="gallery-thumb-vid"></video>
+            <% } else { %>
+            <div class="card-l1-placeholder">
+              <iconify-icon icon="material-symbols-light:music-note-2" width="36" height="36" style="color:#000;opacity:0.6;"></iconify-icon>
+            </div>
+            <% } %>
+            <!-- Top overlay: name+service left, date right -->
+            <div style="position:absolute;top:0;left:0;right:0;background:linear-gradient(to bottom,rgba(0,0,0,0.72) 0%,transparent 100%);padding:10px 10px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+              <div style="min-width:0;">
+                <p style="font-size:14px;font-weight:700;color:#fff;font-family:monospace;letter-spacing:0.04em;text-shadow:0 1px 3px rgba(0,0,0,0.8);margin:0 0 1px;"><%= project.crCode %></p>
+                <p style="font-size:12px;color:rgba(255,255,255,0.7);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= project.serviceType.join(', ') %></p>
+              </div>
+              <span style="font-size:10px;color:rgba(255,255,255,0.5);white-space:nowrap;flex-shrink:0;padding-top:2px;"><%= dateStr %></span>
+            </div>
+          </div>
+
+          <!-- Level 2: other files strip (only when files exist) -->
+          <% if (otherFiles.length > 0) { %>
+          <div class="card-l2">
+            <% l2Show.forEach(f => {
+              const isImg = /^image\//i.test(f.mimetype);
+              const isVid = /^video\//i.test(f.mimetype);
+              const isAud = /^audio\//i.test(f.mimetype);
+              const url = '/dashboard/uploads/' + f.storedName;
+            %>
+            <div class="l2-thumb<%= isAud ? ' l2-thumb-audio' : '' %>">
+              <% if (isImg) { %>
+              <img src="<%= url %>" alt="" />
+              <% } else if (isVid) { %>
+              <video src="<%= url %>" muted preload="auto" class="gallery-thumb-vid"></video>
+              <% } else if (isAud) { %>
+              <iconify-icon icon="material-symbols-light:music-note-2" width="20" height="20" style="color:#f59e0b;"></iconify-icon>
+              <% } else { %>
+              <iconify-icon icon="material-symbols-light:attach-file" width="20" height="20" style="color:#6b7280;"></iconify-icon>
+              <% } %>
+            </div>
+            <% }) %>
+            <% if (l2More > 0) { %>
+            <span class="l2-more">and <%= l2More %> more...</span>
+            <% } %>
+          </div>
+          <% } %>
+
+        </div>
+        <% }) %>
+      </div>
+
+      <!-- Flat file grid — shown instead of the project grid when a specific type is selected -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3" id="file-grid-flat" style="display:none;">
+        <% projects.forEach((project, pi) => {
+          project.uploadedFiles.forEach((f, fi) => {
+            const type = /^video\//i.test(f.mimetype) ? 'video' : /^audio\//i.test(f.mimetype) ? 'audio' : /^image\//i.test(f.mimetype) ? 'image' : 'other';
+            const url  = '/dashboard/uploads/' + f.storedName;
+        %>
+        <div class="file-tile" data-file-type="<%= type %>" onclick="openModal(<%= pi %>, <%= fi %>)">
+          <div class="file-tile-media">
+            <% if (type === 'video') { %>
+            <video src="<%= url %>" muted preload="auto" class="gallery-thumb-vid"></video>
+            <% } else if (type === 'image') { %>
+            <img src="<%= url %>" alt="" />
+            <% } else if (type === 'audio') { %>
+            <div class="file-tile-placeholder"><iconify-icon icon="material-symbols-light:music-note-2" width="28" height="28" style="color:#f59e0b;"></iconify-icon></div>
+            <% } else { %>
+            <div class="file-tile-placeholder"><iconify-icon icon="material-symbols-light:attach-file" width="28" height="28" style="color:#6b7280;"></iconify-icon></div>
+            <% } %>
+          </div>
+          <div class="file-tile-caption">
+            <p class="file-tile-name"><%= f.originalName %></p>
+            <p class="file-tile-code"><%= project.crCode %></p>
+          </div>
+        </div>
+        <% }) }) %>
+      </div>
+      <p class="hidden text-gray-600 text-sm text-center py-16" id="file-grid-empty">No files of this type yet.</p>
+
+      <% } %>
+
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="gallery-modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal-container">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <span id="modal-crcode" style="font-size:16px;font-weight:700;color:#fff;font-family:monospace;letter-spacing:0.04em;"></span>
+          <span id="modal-service" style="font-size:13px;color:#9ca3af;"></span>
+        </div>
+        <button onclick="closeModal()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#6b7280;display:flex;align-items:center;padding:4px;border-radius:6px;transition:color 0.15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#6b7280'">
+          <iconify-icon icon="material-symbols-light:close" width="20" height="20"></iconify-icon>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+
+        <!-- Left: main player -->
+        <div class="modal-player-wrap">
+          <div id="modal-player"></div>
+          <div class="modal-info-bar" id="modal-info-bar"></div>
+        </div>
+
+        <!-- Right: file grid -->
+        <div class="modal-file-panel">
+          <div class="modal-file-panel-header">
+            <span id="modal-file-count" style="font-size:11px;color:#6b7280;font-weight:500;"></span>
+          </div>
+          <div id="modal-file-grid"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const PROJECTS = <%- JSON.stringify(projects.map(p => ({
+    id: p._id,
+    crCode: p.crCode,
+    serviceType: p.serviceType,
+    status: p.status,
+    files: (p.uploadedFiles || []).map(f => ({
+      storedName: f.storedName,
+      originalName: f.originalName,
+      mimetype: f.mimetype,
+      size: f.size,
+    })),
+  }))) %>;
+
+  let modalProject = null;
+  let modalFileIdx = null;
+
+  function fileType(m) {
+    if (/^video\//i.test(m))  return 'video';
+    if (/^audio\//i.test(m))  return 'audio';
+    if (/^image\//i.test(m))  return 'image';
+    return 'other';
+  }
+
+  function sizeLabel(b) {
+    return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
+  }
+
+  // ── Modal ──────────────────────────────────────────────
+  function openModal(index, fileIdx) {
+    const p = PROJECTS[index];
+    modalProject = p;
+
+    document.getElementById('modal-crcode').textContent  = p.crCode;
+    document.getElementById('modal-service').textContent = p.serviceType.join(', ');
+    document.getElementById('modal-file-count').textContent = p.files.length + ' file' + (p.files.length !== 1 ? 's' : '');
+
+    // Build file grid
+    const grid = document.getElementById('modal-file-grid');
+    grid.innerHTML = p.files.map((f, i) => {
+      const type = fileType(f.mimetype);
+      const url  = '/dashboard/uploads/' + f.storedName;
+      let inner  = '';
+      if (type === 'image') {
+        inner = `<img src="${url}" alt="" />`;
+      } else if (type === 'video') {
+        inner = `<video src="${url}" muted preload="auto" class="modal-thumb-vid"></video>`;
+      } else if (type === 'audio') {
+        inner = `<div style="width:100%;height:100%;background:#f59e0b22;display:flex;align-items:center;justify-content:center;">
+          <iconify-icon icon="material-symbols-light:music-note-2" width="22" height="22" style="color:#f59e0b;"></iconify-icon></div>`;
+      } else {
+        inner = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+          <iconify-icon icon="material-symbols-light:attach-file" width="22" height="22" style="color:#6b7280;"></iconify-icon></div>`;
+      }
+      return `<div class="modal-thumb" data-idx="${i}" onclick="selectModalFile(${i})">${inner}</div>`;
+    }).join('');
+
+    // Show modal, pick first file
+    document.getElementById('gallery-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+      grid.querySelectorAll('.modal-thumb-vid').forEach(v => {
+        const seek = () => { if (v.currentTime === 0) v.currentTime = 0.1; };
+        if (v.readyState >= 2) seek(); else v.addEventListener('loadeddata', seek, { once: true });
+      });
+      if (fileIdx != null) {
+        selectModalFile(fileIdx);
+      } else {
+        const firstVid = p.files.findIndex(f => fileType(f.mimetype) === 'video');
+        selectModalFile(firstVid >= 0 ? firstVid : 0);
+      }
+    }, 50);
+  }
+
+  function selectModalFile(idx) {
+    const f    = modalProject.files[idx];
+    const type = fileType(f.mimetype);
+    const url  = '/dashboard/uploads/' + f.storedName;
+    modalFileIdx = idx;
+
+    const player = document.getElementById('modal-player');
+
+    if (type === 'video') {
+      player.innerHTML = `<video controls autoplay src="${url}" style="max-width:100%;max-height:100%;display:block;"></video>`;
+    } else if (type === 'audio') {
+      player.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+          <div style="width:88px;height:88px;border-radius:20px;background:#f59e0b;display:flex;align-items:center;justify-content:center;">
+            <iconify-icon icon="material-symbols-light:music-note-2" width="44" height="44" style="color:#000;"></iconify-icon>
+          </div>
+          <audio controls autoplay style="width:300px;"><source src="${url}" type="${f.mimetype}"></audio>
+        </div>`;
+    } else if (type === 'image') {
+      player.innerHTML = `<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;" />`;
+    } else {
+      player.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <iconify-icon icon="material-symbols-light:attach-file" width="44" height="44" style="color:#4b5563;"></iconify-icon>
+          <span style="font-size:13px;color:#6b7280;">${f.originalName}</span>
+        </div>`;
+    }
+
+    // Info bar
+    document.getElementById('modal-info-bar').innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:13px;color:#e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 0 2px;">${f.originalName}</p>
+        <p style="font-size:11px;color:#6b7280;margin:0;">${sizeLabel(f.size)}</p>
+      </div>
+      <a href="${url}" download="${f.originalName}"
+        style="font-size:12px;font-weight:600;color:#f59e0b;text-decoration:none;padding:6px 14px;border-radius:9999px;border:1px solid rgba(245,158,11,0.3);white-space:nowrap;flex-shrink:0;">
+        Download
+      </a>`;
+
+    // Highlight selected thumb
+    document.querySelectorAll('.modal-thumb').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.idx) === idx);
+    });
+  }
+
+  function closeModal() {
+    document.getElementById('gallery-modal').classList.remove('open');
+    document.getElementById('modal-player').innerHTML = '';
+    document.body.style.overflow = '';
+    modalProject = null;
+    modalFileIdx = null;
+  }
+
+  // ── Filter ─────────────────────────────────────────────
+  const FILTER_LABELS = { all: 'All', video: 'Video', audio: 'Audio', image: 'Image', other: 'Other' };
+
+  function toggleFiletypeDropdown() {
+    const menu = document.getElementById('filetype-menu');
+    const chevron = document.getElementById('filetype-chevron');
+    const open = !menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', open);
+    chevron.style.transform = open ? '' : 'rotate(180deg)';
+  }
+
+  document.addEventListener('click', e => {
+    if (!document.getElementById('filetype-dropdown').contains(e.target)) {
+      document.getElementById('filetype-menu').classList.add('hidden');
+      document.getElementById('filetype-chevron').style.transform = '';
+    }
+  });
+
+  function applyFilter(btn) {
+    const type = btn.dataset.value;
+
+    document.getElementById('filetype-icon').setAttribute('icon', btn.dataset.icon);
+    document.getElementById('filetype-label').textContent = FILTER_LABELS[type];
+    document.querySelectorAll('.filetype-option').forEach(b => {
+      b.classList.toggle('text-white', b === btn);
+      b.classList.toggle('text-gray-400', b !== btn);
+    });
+    document.getElementById('filetype-menu').classList.add('hidden');
+    document.getElementById('filetype-chevron').style.transform = '';
+
+    const projectGrid = document.getElementById('project-grid');
+    const fileGrid    = document.getElementById('file-grid-flat');
+    const emptyMsg    = document.getElementById('file-grid-empty');
+
+    if (type === 'all') {
+      projectGrid.style.display = '';
+      fileGrid.style.display = 'none';
+      emptyMsg.classList.add('hidden');
+      return;
+    }
+
+    projectGrid.style.display = 'none';
+    fileGrid.style.display = 'grid';
+
+    let visibleCount = 0;
+    document.querySelectorAll('.file-tile').forEach(tile => {
+      const match = tile.dataset.fileType === type;
+      tile.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
+    });
+    emptyMsg.classList.toggle('hidden', visibleCount > 0);
+    fileGrid.style.display = visibleCount > 0 ? 'grid' : 'none';
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+  }
+
+  // Seek card video thumbnails to first frame
+  document.querySelectorAll('.gallery-thumb-vid').forEach(v => {
+    const seek = () => { if (v.currentTime === 0) v.currentTime = 0.1; };
+    if (v.readyState >= 2) seek();
+    else v.addEventListener('loadeddata', seek, { once: true });
+  });
+
+  // ESC closes modal
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
+
+  <%- include('../partials/toast') %>
+  <%- include('partials/notif-poll') %>
+</body>
+</html>

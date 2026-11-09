@@ -111,7 +111,7 @@ const bookingRequestSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Backs the guest-quota check (enforceGuestSubmissionQuota in server.js), which looks up
+// Backs the guest-quota check (enforceGuestSubmissionQuota in middleware/quotas.js), which looks up
 // a visitor's recent submissions on every /hire POST.
 bookingRequestSchema.index({ visitorId: 1, createdAt: -1 });
 

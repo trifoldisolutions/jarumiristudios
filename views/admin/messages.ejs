@@ -271,7 +271,7 @@
 </head>
 <body class="bg-[#080808] text-gray-100 antialiased min-h-screen">
 
-  <%- include('_sidebar', { active: 'messages' }) %>
+  <%- include('partials/sidebar', { active: 'messages' }) %>
 
   <div class="lg:ml-55">
   <div class="lg:hidden h-14"></div>
@@ -372,7 +372,7 @@
     <!-- Thread panel -->
     <div id="thread-panel" class="thread-panel-col">
       <% if (typeof booking !== 'undefined' && booking) { %>
-      <%- include('_message-thread-panel', { booking, messages, myRole: 'admin', attachmentBasePath: '/admin/messages/attachments', postPath: '/admin/booking/' + booking._id + '/messages' }) %>
+      <%- include('partials/message-thread-panel', { booking, messages, myRole: 'admin', attachmentBasePath: '/admin/messages/attachments', postPath: '/admin/booking/' + booking._id + '/messages' }) %>
       <% } else { %>
       <div class="flex-1 flex items-center justify-center text-center px-6">
         <div>
@@ -407,7 +407,7 @@
       const filters = { read: 'all', status: 'all' };
 
       // Re-queried on every call (not cached) so rows created later — e.g. a booking's first-ever
-      // message inserting a fresh row live, see _message-thread-script.ejs — get filtered too.
+      // message inserting a fresh row live, see partials/message-thread-script.ejs — get filtered too.
       function applyFilters() {
         const rows = Array.from(document.querySelectorAll('.thread-row'));
         const q = (searchInput?.value || '').trim().toLowerCase();
@@ -450,9 +450,9 @@
       });
     })();
   </script>
-  <%- include('../_message-thread-script', { booking: typeof booking !== 'undefined' ? booking : null }) %>
-  <%- include('../_toast') %>
-  <%- include('../_confirm-modal') %>
-  <%- include('_notif-poll') %>
+  <%- include('../partials/message-thread-script', { booking: typeof booking !== 'undefined' ? booking : null }) %>
+  <%- include('../partials/toast') %>
+  <%- include('../partials/confirm-modal') %>
+  <%- include('partials/notif-poll') %>
 </body>
 </html>

@@ -52,7 +52,7 @@
 </head>
 <body class="bg-[#080808] text-gray-100 antialiased min-h-screen">
 
-  <%- include('_sidebar', { active: 'dashboard' }) %>
+  <%- include('partials/sidebar', { active: 'dashboard' }) %>
 
   <div class="lg:ml-55 min-h-screen">
   <div class="lg:hidden h-14"></div>
@@ -76,7 +76,7 @@
         </a>
       </div>
       <div id="filter-summary-region" class="shrink-0 mb-2">
-        <%- include('_filter-summary') %>
+        <%- include('partials/filter-summary') %>
       </div>
     </div>
 
@@ -138,7 +138,7 @@
     </div>
 
     <div id="results-table-region">
-      <%- include('_results-table') %>
+      <%- include('partials/results-table') %>
     </div>
 
   </main>
@@ -387,7 +387,7 @@
     });
   </script>
 
-  <%- include('../_toast') %>
-  <%- include('_notif-poll') %>
+  <%- include('../partials/toast') %>
+  <%- include('partials/notif-poll') %>
 </body>
 </html>

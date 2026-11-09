@@ -1,0 +1,154 @@
+<!-- Simplified messaging panel for the associate portal — same send/receive/delete capability as
+     the admin and client chat, without the lazy-thumbnail/progress-ring/tagged-file-picker UX
+     those have (see views/partials/message-thread-script.ejs) — kept small and self-contained instead. -->
+<div class="card p-0! overflow-hidden flex flex-col <%= locals.fullHeight ? 'flex-1' : '' %>" <%= locals.fullHeight ? '' : 'style="height: 520px;"' %>>
+  <div class="px-5 py-4 border-b border-white/5 shrink-0">
+    <h2 class="text-base font-semibold text-white">Messages</h2>
+    <p class="text-xs text-gray-500 mt-0.5"><%= booking.name %></p>
+  </div>
+
+  <div id="am-message-list" class="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3">
+    <% if (!booking.chatUnlocked) { %>
+    <p class="text-sm text-gray-600 text-center mt-8">Chat opens once this project is accepted.</p>
+    <% } else if (!messages.length) { %>
+    <p class="text-sm text-gray-600 text-center mt-8">No messages yet. Start the conversation with <%= booking.name %>.</p>
+    <% } %>
+    <% messages.forEach(m => {
+      const isMine = m.senderRole === 'admin';
+      const atts = (m.attachments && m.attachments.length) ? m.attachments : (m.attachment && m.attachment.storedName ? [m.attachment] : []);
+    %>
+    <div class="flex <%= isMine ? 'justify-end' : 'justify-start' %>" data-message-id="<%= m._id %>">
+      <div class="max-w-[75%] rounded-lg px-3.5 py-2.5 text-sm <%= isMine ? 'bg-amber-400/15 text-white' : 'bg-white/5 text-gray-200' %>">
+        <% if (m.deleted) { %>
+        <p class="italic text-gray-500">This message was deleted</p>
+        <% } else { %>
+        <% atts.forEach(att => { %>
+        <a href="/associate/messages/attachments/<%= att.storedName %>" target="_blank" rel="noopener"
+          class="flex items-center gap-2 text-amber-300 hover:text-amber-200 transition-colors mb-1.5 text-xs">
+          <iconify-icon icon="material-symbols-light:attach-file" width="14" height="14"></iconify-icon>
+          <span class="truncate"><%= att.originalName %></span>
+        </a>
+        <% }) %>
+        <% if (m.body) { %><p class="whitespace-pre-wrap break-words"><%= m.body %></p><% } %>
+        <div class="flex items-center gap-2 mt-1">
+          <p class="text-[10px] text-gray-500"><%= new Date(m.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) %></p>
+          <% if (isMine) { %>
+          <button type="button" class="am-delete-btn text-[10px] text-gray-600 hover:text-red-400 transition-colors" data-message-id="<%= m._id %>">Delete</button>
+          <% } %>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+
+  <% const composerLocked = !booking.chatUnlocked || booking.chatBlocked; %>
+  <form id="am-composer" class="flex items-end gap-2 px-4 py-3 border-t border-white/5 shrink-0" enctype="multipart/form-data"
+    data-booking-id="<%= booking._id %>" data-post-path="/associate/booking/<%= booking._id %>/messages">
+    <input type="file" id="am-attachments" name="attachments" multiple class="hidden" <%= composerLocked ? 'disabled' : '' %> />
+    <button type="button" id="am-attach-btn" <%= composerLocked ? 'disabled' : '' %>
+      class="h-10 w-10 flex items-center justify-center text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-md transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">
+      <iconify-icon icon="material-symbols-light:attach-file" width="18" height="18"></iconify-icon>
+    </button>
+    <textarea id="am-body" name="body" rows="1" placeholder="<%= composerLocked ? 'Chat opens once this project is accepted.' : 'Message the client…' %>" <%= composerLocked ? 'disabled' : '' %>
+      class="flex-1 h-10 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white outline-none resize-none disabled:opacity-40 disabled:cursor-not-allowed"></textarea>
+    <button type="submit" id="am-send-btn" <%= composerLocked ? 'disabled' : '' %>
+      class="h-10 px-4 rounded-md bg-amber-400 text-black text-sm font-semibold hover:bg-amber-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
+      Send
+    </button>
+  </form>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+  var list = document.getElementById('am-message-list');
+  var composer = document.getElementById('am-composer');
+  if (!composer) return;
+  var bookingId = composer.dataset.bookingId;
+  var postPath = composer.dataset.postPath;
+  var bodyInput = document.getElementById('am-body');
+  var attachBtn = document.getElementById('am-attach-btn');
+  var attachInput = document.getElementById('am-attachments');
+  var sendBtn = document.getElementById('am-send-btn');
+
+  function scrollToBottom() { list.scrollTop = list.scrollHeight; }
+  scrollToBottom();
+
+  function bubbleHtml(m) {
+    var atts = (m.attachments && m.attachments.length) ? m.attachments : [];
+    var attHtml = atts.map(function (a) {
+      return '<a href="/associate/messages/attachments/' + a.storedName + '" target="_blank" rel="noopener" ' +
+        'class="flex items-center gap-2 text-amber-300 hover:text-amber-200 transition-colors mb-1.5 text-xs">' +
+        '<iconify-icon icon="material-symbols-light:attach-file" width="14" height="14"></iconify-icon>' +
+        '<span class="truncate">' + a.originalName + '</span></a>';
+    }).join('');
+    var bodyHtml = m.body ? '<p class="whitespace-pre-wrap break-words">' + m.body.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</p>' : '';
+    var time = new Date(m.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    var isMine = m.senderRole === 'admin';
+    var deleteBtn = isMine ? '<button type="button" class="am-delete-btn text-[10px] text-gray-600 hover:text-red-400 transition-colors" data-message-id="' + m._id + '">Delete</button>' : '';
+    return '<div class="flex ' + (isMine ? 'justify-end' : 'justify-start') + '" data-message-id="' + m._id + '">' +
+      '<div class="max-w-[75%] rounded-lg px-3.5 py-2.5 text-sm ' + (isMine ? 'bg-amber-400/15 text-white' : 'bg-white/5 text-gray-200') + '">' +
+      attHtml + bodyHtml +
+      '<div class="flex items-center gap-2 mt-1"><p class="text-[10px] text-gray-500">' + time + '</p>' + deleteBtn + '</div>' +
+      '</div></div>';
+  }
+
+  function appendMessage(m) {
+    if (list.querySelector('[data-message-id="' + m._id + '"]')) return;
+    var empty = list.querySelector('p.text-center');
+    if (empty) empty.remove();
+    var wrap = document.createElement('div');
+    wrap.innerHTML = bubbleHtml(m);
+    list.appendChild(wrap.firstElementChild);
+    scrollToBottom();
+  }
+
+  function applyDeleted(messageId) {
+    var row = list.querySelector('[data-message-id="' + messageId + '"] > div');
+    if (!row) return;
+    row.innerHTML = '<p class="italic text-gray-500">This message was deleted</p>';
+  }
+
+  var socket = io({ query: { bookingId: bookingId } });
+  socket.on('new-message', function (m) { appendMessage(m); });
+  socket.on('message-deleted', function (data) { applyDeleted(data.messageId); });
+
+  attachBtn.addEventListener('click', function () { attachInput.click(); });
+
+  composer.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var body = bodyInput.value.trim();
+    if (!body && !attachInput.files.length) return;
+    sendBtn.disabled = true;
+    try {
+      var formData = new FormData();
+      formData.append('body', body);
+      Array.prototype.forEach.call(attachInput.files, function (f) { formData.append('attachments', f); });
+      var res = await fetch(postPath, { method: 'POST', body: formData });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Message failed to send.');
+      appendMessage(data.message);
+      bodyInput.value = '';
+      attachInput.value = '';
+    } catch (err) {
+      if (typeof showToast === 'function') showToast('Message not sent', err.message, 'error');
+    } finally {
+      sendBtn.disabled = false;
+    }
+  });
+
+  bodyInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); composer.requestSubmit(); }
+  });
+
+  list.addEventListener('click', function (e) {
+    var btn = e.target.closest('.am-delete-btn');
+    if (!btn) return;
+    if (!confirm('Delete this message?')) return;
+    fetch(postPath + '/' + btn.dataset.messageId + '/delete', { method: 'POST' }).then(function (res) {
+      if (res.ok) applyDeleted(btn.dataset.messageId);
+    });
+  });
+}());
+</script>

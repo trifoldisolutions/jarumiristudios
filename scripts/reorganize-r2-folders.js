@@ -16,7 +16,7 @@
 // Optionally scope to one booking while testing: --crCode=ABC-123-XYZ
 require("dotenv").config();
 const mongoose = require("mongoose");
-const { copyObject, deleteObject, headObject } = require("../lib/r2");
+const { copyObject, deleteObject, headObject } = require("../services/r2");
 const BookingRequest = require("../models/BookingRequest");
 const Message = require("../models/Message");
 

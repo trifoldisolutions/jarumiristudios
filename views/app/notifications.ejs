@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications | Jarumiri Studios</title>
+  <link rel="icon" type="image/png" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="apple-touch-icon" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="stylesheet" href="/output.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .brand { font-family: 'Syne', sans-serif; }
+
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; min-height: 40px; border-radius: 6px;
+      font-size: 13.5px; color: #9ca3af; font-weight: 500;
+      text-decoration: none; transition: all 0.15s;
+    }
+    .sidebar-link:hover { color: #e5e7eb; background: rgba(255,255,255,0.045); }
+    .sidebar-link.active { color: #fff; background: rgba(255,255,255,0.07); }
+    .sidebar-link.danger:hover { color: #f87171; background: rgba(239,68,68,0.06); }
+
+    .notif-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.15s;
+    }
+    .notif-row:last-child { border-bottom: none; }
+    .notif-row.unread { background: rgba(255,255,255,0.015); }
+    .notif-row:hover { background: rgba(255,255,255,0.03); }
+
+    .notif-icon {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .notif-icon.status   { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2); }
+    .notif-icon.invoice  { background: rgba(245,158,11,0.1);  border: 1px solid rgba(245,158,11,0.2); }
+    .notif-icon.payment  { background: rgba(16,185,129,0.1);  border: 1px solid rgba(16,185,129,0.2); }
+    .notif-icon.dismiss  { background: rgba(239,68,68,0.1);   border: 1px solid rgba(239,68,68,0.2); }
+
+    .unread-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #f59e0b; flex-shrink: 0; margin-top: 6px;
+    }
+  </style>
+</head>
+<body class="bg-[#080808] text-gray-100 antialiased">
+
+  <!-- Mobile top bar -->
+  <header class="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0d0d0d] border-b border-white/5 flex items-center gap-2 px-4">
+    <button onclick="toggleSidebar()" class="h-12 w-12 flex items-center justify-center text-white transition-colors cursor-pointer">
+      <iconify-icon icon="material-symbols-light:menu" width="22" height="22"></iconify-icon>
+    </button>
+    <span class="brand text-[15px] font-bold text-white leading-none">Jarumiri Studios<span class="text-amber-400">.</span></span>
+  </header>
+
+  <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-screen w-[220px] bg-[#0d0d0d] border-r border-white/5 z-40 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-[65px] flex items-center px-5 border-b border-white/5 shrink-0">
+      <span class="brand text-[15px] font-bold text-white">Jarumiri Studios<span class="text-amber-400">.</span></span>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <a href="/dashboard" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:grid-view" width="20" height="20"></iconify-icon>
+        Overview
+      </a>
+      <a href="/dashboard/gallery" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:photo-library" width="20" height="20"></iconify-icon>
+        Gallery
+      </a>
+      <a href="/dashboard/messages" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:chat" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Messages</span>
+        <% if (locals.unreadMessageCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadMessageCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/notifications" class="sidebar-link active">
+        <iconify-icon icon="material-symbols-light:notifications" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Notifications</span>
+      </a>
+      <a href="/dashboard/invoices" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:receipt-long-outline" width="20" height="20"></iconify-icon>
+        Invoices
+      </a>
+      <a href="/dashboard/account" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:person" width="20" height="20"></iconify-icon>
+        Account
+      </a>
+    </nav>
+
+    <div class="px-3 pb-4 border-t border-white/5 shrink-0 space-y-1">
+      <a href="/dashboard/new"
+        class="flex items-center gap-2.5 w-full px-3 min-h-[40px] rounded-md bg-amber-400 text-black text-[13.5px] font-bold hover:bg-amber-300 transition-colors">
+        <iconify-icon icon="material-symbols-light:add" width="20" height="20"></iconify-icon>
+        New project
+      </a>
+      <a href="https://t.me/jarumiri" target="_blank" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:forum" width="20" height="20"></iconify-icon>
+        Support
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="lg:ml-[220px] min-h-screen">
+    <div class="lg:hidden h-14"></div>
+
+    <main class="max-w-[700px] mx-auto px-5 py-10">
+
+      <% if (!notifications || notifications.length === 0) { %>
+      <!-- Empty state -->
+      <div id="notif-empty" class="text-center py-20 border border-white/5 rounded-md bg-white/1">
+        <div class="w-11 h-11 rounded-md bg-white/3 border border-white/8 flex items-center justify-center mx-auto mb-4">
+          <iconify-icon icon="material-symbols-light:notifications-off" width="22" height="22" class="text-gray-700"></iconify-icon>
+        </div>
+        <p class="text-gray-600 text-sm">No notifications yet.</p>
+        <p class="text-gray-700 text-xs mt-1">You'll be notified here when your projects are updated.</p>
+      </div>
+
+      <% } else { %>
+
+      <!-- Search + filter -->
+      <div class="mb-5 flex items-center gap-2">
+        <div class="relative flex-1">
+          <iconify-icon icon="material-symbols-light:search" width="18" height="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"></iconify-icon>
+          <input id="notif-search" type="text" placeholder="Search notifications..." autocomplete="off"
+            class="w-full bg-[#0d0d0d] border border-white/8 rounded-md pl-9 pr-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-white/20 transition-colors" />
+        </div>
+
+        <div class="relative shrink-0" id="notif-filter">
+          <button type="button" id="notif-filter-btn" onclick="toggleNotifFilter()"
+            class="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-md px-4 py-2.5 text-sm text-gray-300 hover:border-white/20 hover:text-white transition-colors whitespace-nowrap">
+            <iconify-icon icon="material-symbols-light:filter-list" width="15" height="15"></iconify-icon>
+            <span>Filter</span>
+            <span id="notif-filter-count" class="hidden min-w-4 h-4 px-1 rounded-full bg-amber-400 text-black text-[10px] font-bold items-center justify-center"></span>
+            <svg id="notif-filter-chevron" class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+
+          <div id="notif-filter-menu"
+            class="hidden absolute right-0 top-full mt-1.5 z-50 min-w-[200px] bg-[#111] border border-white/10 rounded-md overflow-hidden shadow-xl">
+            <div class="px-4 pt-2.5 pb-1 text-[11px] uppercase tracking-wide text-gray-600 font-semibold">Date</div>
+            <button type="button" class="notif-date-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.05] transition-colors" data-value="all" onclick="applyDateFilter(this)">
+              <iconify-icon icon="material-symbols-light:select-all" width="15" height="15"></iconify-icon> All time
+            </button>
+            <button type="button" class="notif-date-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="today" onclick="applyDateFilter(this)">
+              <iconify-icon icon="material-symbols-light:today" width="15" height="15"></iconify-icon> Today
+            </button>
+            <button type="button" class="notif-date-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="week" onclick="applyDateFilter(this)">
+              <iconify-icon icon="material-symbols-light:calendar-view-week" width="15" height="15"></iconify-icon> This week
+            </button>
+            <button type="button" class="notif-date-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="month" onclick="applyDateFilter(this)">
+              <iconify-icon icon="material-symbols-light:calendar-month" width="15" height="15"></iconify-icon> This month
+            </button>
+
+            <div class="border-t border-white/8 mt-1"></div>
+            <div class="px-4 pt-2.5 pb-1 text-[11px] uppercase tracking-wide text-gray-600 font-semibold">Type</div>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.05] transition-colors" data-value="all" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:select-all" width="15" height="15"></iconify-icon> All types
+            </button>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="status_change" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:autorenew" width="15" height="15"></iconify-icon> Status update
+            </button>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="invoice_sent" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:receipt-long" width="15" height="15"></iconify-icon> Invoice sent
+            </button>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="payment_confirmed" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:check-circle" width="15" height="15"></iconify-icon> Payment confirmed
+            </button>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="due_date_updated" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:calendar-clock" width="15" height="15"></iconify-icon> Due date updated
+            </button>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="due_date_reminder" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:alarm" width="15" height="15"></iconify-icon> Due date reminder
+            </button>
+            <button type="button" class="notif-type-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="deliverable_ready" onclick="applyTypeFilter(this)">
+              <iconify-icon icon="material-symbols-light:download-for-offline" width="15" height="15"></iconify-icon> Deliverable ready
+            </button>
+
+            <div class="border-t border-white/8 mt-1"></div>
+            <button type="button" id="notif-filter-clear" class="w-full text-center px-4 py-2.5 text-xs text-gray-500 hover:text-gray-300 hover:bg-white/[0.05] transition-colors">Clear filters</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="notif-no-results" class="hidden text-center py-16 border border-white/5 rounded-md bg-white/1 mb-4">
+        <p class="text-gray-600 text-sm">No notifications match your search.</p>
+      </div>
+
+      <div id="notif-list" class="border border-white/5 rounded-md overflow-hidden bg-[#0d0d0d]">
+        <% notifications.forEach(n => {
+          const isUnread = !n.read;
+          const date = new Date(n.createdAt);
+          const now = new Date();
+          const diffMs = now - date;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          let timeLabel;
+          if (diffMins < 1)        timeLabel = 'Just now';
+          else if (diffMins < 60)  timeLabel = diffMins + 'm ago';
+          else if (diffHours < 24) timeLabel = diffHours + 'h ago';
+          else if (diffDays < 7)   timeLabel = diffDays + 'd ago';
+          else                     timeLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+          let iconName, iconClass, iconColor;
+          if (n.type === 'status_change') {
+            iconName = 'material-symbols-light:autorenew'; iconClass = 'status'; iconColor = '#818cf8';
+          } else if (n.type === 'invoice_sent') {
+            iconName = 'material-symbols-light:receipt-long'; iconClass = 'invoice'; iconColor = '#f59e0b';
+          } else if (n.type === 'payment_confirmed') {
+            iconName = 'material-symbols-light:check-circle'; iconClass = 'payment'; iconColor = '#34d399';
+          } else if (n.type === 'due_date_updated') {
+            iconName = 'material-symbols-light:calendar-clock'; iconClass = 'invoice'; iconColor = '#f59e0b';
+          } else if (n.type === 'due_date_reminder') {
+            iconName = 'material-symbols-light:alarm'; iconClass = 'invoice'; iconColor = '#f59e0b';
+          } else if (n.type === 'deliverable_ready') {
+            iconName = 'material-symbols-light:download-for-offline'; iconClass = 'payment'; iconColor = '#34d399';
+          } else {
+            iconName = 'material-symbols-light:close-small'; iconClass = 'dismiss'; iconColor = '#f87171';
+          }
+        %>
+        <div class="notif-row <%= isUnread ? 'unread' : '' %>" data-type="<%= n.type %>" data-ts="<%= date.getTime() %>" data-search="<%= n.message.toLowerCase() %>">
+          <div class="notif-icon <%= iconClass %>">
+            <iconify-icon icon="<%= iconName %>" width="17" height="17" style="color:<%= iconColor %>"></iconify-icon>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-200 leading-snug"><%= n.message %></p>
+            <div class="flex items-center gap-3 mt-1.5">
+              <span class="text-xs text-gray-600"><%= timeLabel %></span>
+              <% if (n.bookingId) { %>
+              <a href="/dashboard/booking/<%= n.bookingId %>" class="text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium inline-flex items-center gap-0.5">View project <iconify-icon icon="material-symbols-light:arrow-right-alt" width="14" height="14"></iconify-icon></a>
+              <% } %>
+            </div>
+          </div>
+          <% if (isUnread) { %>
+          <div class="unread-dot"></div>
+          <% } %>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
+
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    }
+
+    (function () {
+      const searchInput = document.getElementById('notif-search');
+      const rows = document.querySelectorAll('.notif-row');
+      const noResults = document.getElementById('notif-no-results');
+      if (!searchInput || !rows.length) return;
+
+      let dateFilter = 'all';
+      let typeFilter = 'all';
+
+      function startOfToday() {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+      }
+
+      function matchesDate(ts, filter) {
+        if (filter === 'all') return true;
+        const now = Date.now();
+        if (filter === 'today') return ts >= startOfToday();
+        if (filter === 'week') return ts >= now - 7 * 86400000;
+        if (filter === 'month') return ts >= now - 30 * 86400000;
+        return true;
+      }
+
+      function updateFilterCount() {
+        const badge = document.getElementById('notif-filter-count');
+        const count = (dateFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0);
+        if (count > 0) {
+          badge.textContent = count;
+          badge.classList.remove('hidden');
+          badge.classList.add('flex');
+        } else {
+          badge.classList.add('hidden');
+          badge.classList.remove('flex');
+        }
+      }
+
+      function applyFilters() {
+        const term = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+          const matchesSearch = !term || row.dataset.search.includes(term);
+          const matchesType = typeFilter === 'all' || row.dataset.type === typeFilter;
+          const isVisible = matchesSearch && matchesType && matchesDate(parseInt(row.dataset.ts, 10), dateFilter);
+          row.style.display = isVisible ? '' : 'none';
+          if (isVisible) visibleCount++;
+        });
+
+        noResults.classList.toggle('hidden', visibleCount !== 0);
+        updateFilterCount();
+      }
+
+      searchInput.addEventListener('input', applyFilters);
+
+      window.toggleNotifFilter = function () {
+        const menu = document.getElementById('notif-filter-menu');
+        const chevron = document.getElementById('notif-filter-chevron');
+        const open = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', open);
+        chevron.style.transform = open ? '' : 'rotate(180deg)';
+      };
+
+      document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('notif-filter');
+        if (dropdown && !dropdown.contains(e.target)) {
+          document.getElementById('notif-filter-menu').classList.add('hidden');
+          document.getElementById('notif-filter-chevron').style.transform = '';
+        }
+      });
+
+      window.applyDateFilter = function (btn) {
+        dateFilter = btn.dataset.value;
+        document.querySelectorAll('.notif-date-option').forEach(b => {
+          b.classList.toggle('text-white', b === btn);
+          b.classList.toggle('text-gray-400', b !== btn);
+        });
+        applyFilters();
+      };
+
+      window.applyTypeFilter = function (btn) {
+        typeFilter = btn.dataset.value;
+        document.querySelectorAll('.notif-type-option').forEach(b => {
+          b.classList.toggle('text-white', b === btn);
+          b.classList.toggle('text-gray-400', b !== btn);
+        });
+        applyFilters();
+      };
+
+      document.getElementById('notif-filter-clear').addEventListener('click', () => {
+        applyDateFilter(document.querySelector('.notif-date-option[data-value="all"]'));
+        applyTypeFilter(document.querySelector('.notif-type-option[data-value="all"]'));
+      });
+    })();
+  </script>
+  <%- include('../partials/toast') %>
+  <%- include('partials/notif-poll') %>
+</body>
+</html>

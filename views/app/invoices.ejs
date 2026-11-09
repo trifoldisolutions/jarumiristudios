@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoices | Jarumiri Studios</title>
+  <link rel="icon" type="image/png" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="apple-touch-icon" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="stylesheet" href="/output.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .brand { font-family: 'Syne', sans-serif; }
+
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; min-height: 40px; border-radius: 6px;
+      font-size: 13.5px; color: #9ca3af; font-weight: 500;
+      text-decoration: none; transition: all 0.15s;
+    }
+    .sidebar-link:hover { color: #e5e7eb; background: rgba(255,255,255,0.045); }
+    .sidebar-link.active { color: #fff; background: rgba(255,255,255,0.07); }
+    .sidebar-link.danger:hover { color: #f87171; background: rgba(239,68,68,0.06); }
+
+    .status-pill {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 9999px;
+      font-size: 10.5px; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap;
+    }
+    .status-paid    { background: rgba(34,197,94,0.1);   color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+    .status-pending { background: rgba(245,158,11,0.1);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .status-void    { background: rgba(107,114,128,0.1); color: #9ca3af; border: 1px solid rgba(107,114,128,0.2); }
+
+    .project-code-link {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #e5e7eb;
+      text-decoration: none;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .project-code-link:hover { color: #f59e0b; }
+
+    .amount-pos  { color: #d1d5db; }
+    .amount-due  { color: #fff; }
+
+    .pay-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: #000; background: #f59e0b;
+      padding: 7px 14px; border-radius: 9999px; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .pay-btn:hover { background: #fbbf24; }
+    .view-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; color: #9ca3af; border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 14px; border-radius: 9999px; white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .view-btn:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+
+    /* Invoices table (desktop) */
+    .invoices-table { width: 100%; border-collapse: collapse; }
+    .invoices-table thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      white-space: nowrap;
+    }
+    .invoices-table tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      transition: background 0.15s;
+    }
+    .invoices-table tbody tr:last-child { border-bottom: none; }
+    .invoices-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .invoices-table tbody td {
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #d1d5db;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    /* Mobile cards */
+    .invoice-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      border-radius: 10px;
+      padding: 12px;
+    }
+  </style>
+</head>
+<body class="bg-[#080808] text-gray-100 antialiased">
+
+  <!-- Mobile top bar -->
+  <header class="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0d0d0d] border-b border-white/5 flex items-center gap-2 px-4">
+    <button onclick="toggleSidebar()" class="h-12 w-12 flex items-center justify-center text-white transition-colors cursor-pointer">
+      <iconify-icon icon="material-symbols-light:menu" width="22" height="22"></iconify-icon>
+    </button>
+    <span class="brand text-[15px] font-bold text-white leading-none">Jarumiri Studios<span class="text-amber-400">.</span></span>
+  </header>
+
+  <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-screen w-55 bg-[#0d0d0d] border-r border-white/5 z-40 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-16.25 flex items-center px-5 border-b border-white/5 shrink-0">
+      <span class="brand text-[15px] font-bold text-white">Jarumiri Studios<span class="text-amber-400">.</span></span>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <a href="/dashboard" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:grid-view" width="20" height="20"></iconify-icon>
+        Overview
+      </a>
+      <a href="/dashboard/gallery" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:photo-library" width="20" height="20"></iconify-icon>
+        Gallery
+      </a>
+      <a href="/dashboard/messages" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:chat" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Messages</span>
+        <% if (locals.unreadMessageCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadMessageCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/notifications" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:notifications" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Notifications</span>
+        <% if (locals.unreadCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/invoices" class="sidebar-link active">
+        <iconify-icon icon="material-symbols-light:receipt-long-outline" width="20" height="20"></iconify-icon>
+        Invoices
+      </a>
+      <a href="/dashboard/account" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:person" width="20" height="20"></iconify-icon>
+        Account
+      </a>
+    </nav>
+
+    <div class="px-3 pb-4 border-t border-white/5 shrink-0 space-y-1">
+      <a href="/dashboard/new"
+        class="flex items-center gap-2.5 w-full px-3 min-h-10 rounded-md bg-amber-400 text-black text-[13.5px] font-bold hover:bg-amber-300 transition-colors">
+        <iconify-icon icon="material-symbols-light:add" width="20" height="20"></iconify-icon>
+        New project
+      </a>
+      <a href="https://t.me/jarumiri" target="_blank" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:forum" width="20" height="20"></iconify-icon>
+        Support
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="lg:ml-55 min-h-screen">
+    <div class="lg:hidden h-14"></div>
+
+    <main class="max-w-[820px] mx-auto px-4 pt-3 pb-4 lg:px-5 lg:pt-10 lg:pb-12.5">
+
+      <% if (!invoices || invoices.length === 0) { %>
+      <div class="text-center py-20 border border-white/5 rounded-lg bg-white/1">
+        <div class="w-11 h-11 rounded-md bg-white/3 border border-white/8 flex items-center justify-center mx-auto mb-4">
+          <iconify-icon icon="material-symbols-light:receipt-long-outline" width="22" height="22" class="text-gray-700"></iconify-icon>
+        </div>
+        <p class="text-gray-600 text-sm">No invoices yet.</p>
+        <p class="text-gray-700 text-xs mt-1">Invoices appear here once a project moves forward and a deposit is sent.</p>
+      </div>
+
+      <% } else { %>
+
+      <!-- Search + filter -->
+      <div class="mb-5 flex items-center gap-2">
+        <div class="relative flex-1">
+          <iconify-icon icon="material-symbols-light:search" width="18" height="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></iconify-icon>
+          <input id="invoice-search" type="text" placeholder="Search by project code..." autocomplete="off"
+            class="w-full h-12 bg-[#141414] border border-white/15 rounded-md pl-9 pr-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-white/30 transition-colors" />
+        </div>
+
+        <div class="relative shrink-0" id="invoice-filter">
+          <button type="button" id="invoice-filter-btn" onclick="toggleInvoiceFilter()"
+            class="flex items-center gap-2 h-12 bg-[#141414] border border-white/15 rounded-md px-4 text-sm text-gray-200 hover:border-white/30 hover:text-white transition-colors whitespace-nowrap">
+            <iconify-icon icon="material-symbols-light:filter-list" width="15" height="15"></iconify-icon>
+            <span id="invoice-filter-label">Status</span>
+            <svg id="invoice-filter-chevron" class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+
+          <div id="invoice-filter-menu"
+            class="hidden absolute right-0 top-full mt-1.5 z-50 min-w-[160px] bg-[#111] border border-white/10 rounded-md overflow-hidden shadow-xl">
+            <button type="button" class="invoice-status-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.05] transition-colors" data-value="all" onclick="applyStatusFilter(this)">
+              <iconify-icon icon="material-symbols-light:select-all" width="15" height="15"></iconify-icon> All
+            </button>
+            <button type="button" class="invoice-status-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="pending" onclick="applyStatusFilter(this)">
+              <iconify-icon icon="material-symbols-light:schedule" width="15" height="15"></iconify-icon> Pending
+            </button>
+            <button type="button" class="invoice-status-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="paid" onclick="applyStatusFilter(this)">
+              <iconify-icon icon="material-symbols-light:check-circle" width="15" height="15"></iconify-icon> Paid
+            </button>
+            <button type="button" class="invoice-status-option w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.05] hover:text-white transition-colors" data-value="void" onclick="applyStatusFilter(this)">
+              <iconify-icon icon="material-symbols-light:block" width="15" height="15"></iconify-icon> Void
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="invoice-no-results" class="hidden text-center py-16 border border-white/5 rounded-md bg-white/1 mb-4">
+        <p class="text-gray-600 text-sm">No invoices match your search.</p>
+      </div>
+
+      <%
+        const fmtMoney = (v) => v != null ? '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '-';
+        const fmtDue = (inv) => inv.status === 'pending' && inv.dueDate
+          ? new Date(inv.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '-';
+      %>
+
+      <!-- Mobile cards -->
+      <div class="lg:hidden space-y-2" id="invoice-list-mobile">
+        <% invoices.forEach(inv => { %>
+        <div class="invoice-card invoice-item" data-status="<%= inv.status %>" data-search="<%= inv.crCode.toLowerCase() %>">
+          <div class="flex items-center justify-between gap-2">
+            <a href="/dashboard/booking/<%= inv.bookingId %>" class="project-code-link"><%= inv.crCode %></a>
+            <span class="status-pill status-<%= inv.status %>"><%= inv.status %></span>
+          </div>
+          <div class="flex items-center justify-between gap-2 mt-2.5 text-[13px]">
+            <span class="text-gray-400"><%= inv.label %></span>
+            <span class="text-gray-500 text-xs"><%= inv.status === 'pending' ? 'Due ' + fmtDue(inv) : '-' %></span>
+          </div>
+          <div class="flex items-center justify-between gap-2 mt-3">
+            <span class="text-sm font-semibold <%= inv.status === 'pending' ? 'amount-due' : 'amount-pos' %>"><%= fmtMoney(inv.amount) %></span>
+            <% if (inv.invoiceUrl) { %>
+              <% if (inv.status === 'pending') { %>
+              <a href="<%= inv.invoiceUrl %>" target="_blank" rel="noopener" class="pay-btn">Pay now</a>
+              <% } else { %>
+              <a href="<%= inv.invoiceUrl %>" target="_blank" rel="noopener" class="view-btn">View</a>
+              <% } %>
+            <% } %>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+
+      <!-- Desktop table -->
+      <div class="hidden lg:block" id="invoice-list-desktop" style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+        <table class="invoices-table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Invoice</th>
+              <th>Status</th>
+              <th>Due</th>
+              <th style="text-align:right;">Amount</th>
+              <th style="text-align:right; padding-right:16px;">&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% invoices.forEach(inv => { %>
+            <tr class="invoice-item" data-status="<%= inv.status %>" data-search="<%= inv.crCode.toLowerCase() %>">
+              <td><a href="/dashboard/booking/<%= inv.bookingId %>" class="project-code-link"><%= inv.crCode %></a></td>
+              <td><%= inv.label %></td>
+              <td><span class="status-pill status-<%= inv.status %>"><%= inv.status %></span></td>
+              <td style="color:#9ca3af; font-size:12.5px;"><%= fmtDue(inv) %></td>
+              <td style="text-align:right;" class="<%= inv.status === 'pending' ? 'amount-due' : 'amount-pos' %>"><%= fmtMoney(inv.amount) %></td>
+              <td style="text-align:right; padding-right:16px;">
+                <% if (inv.invoiceUrl) { %>
+                  <% if (inv.status === 'pending') { %>
+                  <a href="<%= inv.invoiceUrl %>" target="_blank" rel="noopener" class="pay-btn">Pay now</a>
+                  <% } else { %>
+                  <a href="<%= inv.invoiceUrl %>" target="_blank" rel="noopener" class="view-btn">View</a>
+                  <% } %>
+                <% } %>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    }
+
+    (function () {
+      const searchInput = document.getElementById('invoice-search');
+      const rows = document.querySelectorAll('.invoice-item');
+      const noResults = document.getElementById('invoice-no-results');
+      const mobileList = document.getElementById('invoice-list-mobile');
+      const desktopList = document.getElementById('invoice-list-desktop');
+      if (!searchInput || !rows.length) return;
+
+      let statusFilter = 'all';
+
+      function applyFilters() {
+        const term = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+          const matchesSearch = !term || row.dataset.search.includes(term);
+          const matchesStatus = statusFilter === 'all' || row.dataset.status === statusFilter;
+          const isVisible = matchesSearch && matchesStatus;
+          row.style.display = isVisible ? '' : 'none';
+          if (isVisible) visibleCount++;
+        });
+
+        const hasResults = visibleCount !== 0;
+        noResults.classList.toggle('hidden', hasResults);
+        mobileList.classList.toggle('hidden', !hasResults);
+        desktopList.style.display = hasResults ? '' : 'none';
+      }
+
+      searchInput.addEventListener('input', applyFilters);
+
+      window.toggleInvoiceFilter = function () {
+        const menu = document.getElementById('invoice-filter-menu');
+        const chevron = document.getElementById('invoice-filter-chevron');
+        const open = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', open);
+        chevron.style.transform = open ? '' : 'rotate(180deg)';
+      };
+
+      document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('invoice-filter');
+        if (dropdown && !dropdown.contains(e.target)) {
+          document.getElementById('invoice-filter-menu').classList.add('hidden');
+          document.getElementById('invoice-filter-chevron').style.transform = '';
+        }
+      });
+
+      const STATUS_LABELS = { all: 'Status', pending: 'Pending', paid: 'Paid', void: 'Void' };
+
+      window.applyStatusFilter = function (btn) {
+        statusFilter = btn.dataset.value;
+        document.getElementById('invoice-filter-label').textContent = STATUS_LABELS[statusFilter];
+        document.querySelectorAll('.invoice-status-option').forEach(b => {
+          b.classList.toggle('text-white', b === btn);
+          b.classList.toggle('text-gray-400', b !== btn);
+        });
+        applyFilters();
+      };
+    })();
+  </script>
+  <%- include('../partials/toast') %>
+  <%- include('partials/notif-poll') %>
+</body>
+</html>

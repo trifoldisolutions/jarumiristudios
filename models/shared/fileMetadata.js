@@ -10,7 +10,7 @@ module.exports = {
   mimetype: String,
   // Logical category the file belongs to — "raws" (client-submitted), "deliverables", or "chat"
   // (untagged chat attachment). Both storage backends resolve this to the same physical
-  // subfolder shape via chatDiskFolder/deliverableDiskFolder/diskFolderFor in server.js:
+  // subfolder shape via chatDiskFolder/deliverableDiskFolder/diskFolderFor in services/storage.js:
   // <crCode>/raws/, <crCode>/finals/, <crCode>/chats/clients|associate/.
   folder: String,
   // Full object key once uploaded to R2 (e.g. "<crCode>/raws/<storedName>"). Unset for files

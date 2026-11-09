@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= booking.crCode %> | Jarumiri Studios</title>
+  <link rel="icon" type="image/png" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="apple-touch-icon" href="/assets/jarumiristudios_logo_0726.png" />
+  <link rel="stylesheet" href="/output.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .brand { font-family: 'Syne', sans-serif; }
+
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; min-height: 40px; border-radius: 6px;
+      font-size: 13.5px; color: #9ca3af; font-weight: 500;
+      text-decoration: none; transition: all 0.15s;
+    }
+    .sidebar-link:hover { color: #e5e7eb; background: rgba(255,255,255,0.045); }
+    .sidebar-link.active { color: #fff; background: rgba(255,255,255,0.07); }
+    .sidebar-link.new-link { color: #f59e0b; }
+    .sidebar-link.new-link:hover { color: #fbbf24; background: rgba(245,158,11,0.08); }
+    .sidebar-link.danger:hover { color: #f87171; background: rgba(239,68,68,0.06); }
+
+    .section-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 24px; }
+    .field-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+    .field-value { color: #e5e7eb; font-size: 14px; line-height: 1.6; }
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 14px 16px;
+      color: #fff;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      resize: none;
+      transition: border-color 0.2s ease;
+    }
+    textarea:focus { border-color: rgba(245,158,11,0.5); }
+    textarea::placeholder { color: #4b5563; }
+
+    /* Progress timeline */
+    .timeline-step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; }
+    .timeline-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .timeline-dot.done    { background: #f59e0b; color: #000; }
+    .timeline-dot.active  { background: rgba(245,158,11,0.15); border: 2px solid #f59e0b; color: #f59e0b; }
+    .timeline-dot.future  { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #4b5563; }
+    .timeline-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .timeline-label.done   { color: #f59e0b; }
+    .timeline-label.active { color: #f59e0b; }
+    .timeline-label.future { color: #4b5563; }
+    .timeline-connector {
+      position: absolute; top: 14px; left: calc(50% + 14px);
+      right: calc(-50% + 14px); height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+    .timeline-connector.done { background: #f59e0b; }
+  </style>
+</head>
+<body class="bg-[#080808] text-gray-100 antialiased min-h-screen">
+
+  <!-- Mobile top bar -->
+  <header class="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0d0d0d] border-b border-white/5 flex items-center gap-2 px-4">
+    <button onclick="toggleSidebar()" class="h-12 w-12 flex items-center justify-center text-white transition-colors cursor-pointer">
+      <iconify-icon icon="material-symbols-light:menu" width="22" height="22"></iconify-icon>
+    </button>
+    <span class="brand text-[15px] font-bold text-white leading-none">Jarumiri Studios<span class="text-amber-400">.</span></span>
+  </header>
+
+  <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-screen w-[220px] bg-[#0d0d0d] border-r border-white/5 z-40 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-[65px] flex items-center px-5 border-b border-white/5 shrink-0">
+      <span class="brand text-[15px] font-bold text-white">Jarumiri Studios<span class="text-amber-400">.</span></span>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <a href="/dashboard" class="sidebar-link active">
+        <iconify-icon icon="material-symbols-light:grid-view" width="20" height="20"></iconify-icon>
+        Overview
+      </a>
+      <a href="/dashboard/gallery" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:photo-library" width="20" height="20"></iconify-icon>
+        Gallery
+      </a>
+      <a href="/dashboard/messages" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:chat" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Messages</span>
+        <% if (locals.unreadMessageCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadMessageCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/notifications" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:notifications" width="20" height="20"></iconify-icon>
+        <span class="flex-1">Notifications</span>
+        <% if (locals.unreadCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= unreadCount %></span>
+        <% } %>
+      </a>
+      <a href="/dashboard/invoices" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:receipt-long-outline" width="20" height="20"></iconify-icon>
+        Invoices
+      </a>
+      <a href="/dashboard/account" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:person" width="20" height="20"></iconify-icon>
+        Account
+      </a>
+    </nav>
+    <div class="px-3 pb-4 border-t border-white/5 shrink-0 space-y-1">
+      <a href="/dashboard/new"
+        class="flex items-center gap-2.5 w-full px-3 min-h-10 rounded-md bg-amber-400 text-black text-[13.5px] font-bold hover:bg-amber-300 transition-colors">
+        <iconify-icon icon="material-symbols-light:add" width="20" height="20"></iconify-icon>
+        New project
+      </a>
+      <a href="https://t.me/jarumiri" target="_blank" class="sidebar-link">
+        <iconify-icon icon="material-symbols-light:forum" width="20" height="20"></iconify-icon>
+        Support
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main content wrapper -->
+  <div class="lg:ml-[220px] min-h-screen">
+  <div class="lg:hidden h-14"></div>
+
+  <% const TIER_PRICES  = { Clip: 79, Scene: 189, Feature: 399 };
+     const ADDON_PRICES = { 'Rush delivery': 50, 'Platform cut': 30, 'Captions': 35, 'Censored preview': 45, 'Intro/outro bumper': 75, 'Extra revision': 30 };
+     const canManage = !booking.archived && booking.status !== 'declined' && booking.status !== 'completed'; %>
+
+  <main class="max-w-260 mx-auto px-5 py-10 space-y-5">
+
+    <!-- Header -->
+    <div>
+      <p class="text-sm font-mono text-gray-400 mb-1"><%= booking.crCode %></p>
+      <h1 class="text-2xl font-bold text-white"><%= booking.serviceType.join(', ') %></h1>
+      <p class="text-gray-500 text-sm mt-1">
+        <%= booking.pricingTier === 'Free' ? 'Clip' : booking.pricingTier %> package &bull;
+        Submitted <%= new Date(booking.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
+      </p>
+    </div>
+
+    <!-- Status progress timeline -->
+    <%
+      const STEPS = ['pending', 'in-review', 'accepted', 'in-progress', 'completed'];
+      const STEP_LABELS = { 'pending': 'Submitted', 'in-review': 'In Review', 'accepted': 'Accepted', 'in-progress': 'In Progress', 'completed': 'Completed' };
+      const isDeclined = booking.status === 'declined';
+      const currentIdx = isDeclined ? -1 : STEPS.indexOf(booking.status);
+    %>
+    <div class="section-card">
+      <% if (isDeclined) { %>
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/25 flex items-center justify-center shrink-0">
+          <iconify-icon icon="material-symbols-light:close" width="16" height="16" class="text-red-400"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-red-400">Request declined</p>
+          <p class="text-xs text-gray-500 mt-0.5">This project request was not accepted. Feel free to submit a new request or reach out via Messages.</p>
+        </div>
+      </div>
+      <% } else if (booking.archived) { %>
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+          <iconify-icon icon="material-symbols-light:archive-outline" width="16" height="16" class="text-gray-400"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-400">Project archived</p>
+          <p class="text-xs text-gray-500 mt-0.5">This project has been archived and is no longer active. You can still view its details or delete it below.</p>
+        </div>
+      </div>
+      <% } else { %>
+      <div class="flex items-start">
+        <% STEPS.forEach((s, i) => { %>
+        <%
+          let dotClass, labelClass;
+          if (i < currentIdx)       { dotClass = 'done';   labelClass = 'done'; }
+          else if (i === currentIdx) { dotClass = 'active'; labelClass = 'active'; }
+          else                      { dotClass = 'future'; labelClass = 'future'; }
+        %>
+        <div class="timeline-step">
+          <% if (i < STEPS.length - 1) { %>
+          <div class="timeline-connector <%= i < currentIdx ? 'done' : '' %>"></div>
+          <% } %>
+          <div class="timeline-dot <%= dotClass %>">
+          <% if (i < currentIdx) { %>
+            <iconify-icon icon="material-symbols-light:check" width="13" height="13"></iconify-icon>
+          <% } else { %>
+            <%= i + 1 %>
+          <% } %>
+          </div>
+          <span class="timeline-label <%= labelClass %>"><%= STEP_LABELS[s] %></span>
+        </div>
+        <% }) %>
+      </div>
+
+      <%
+        const nextSteps = {
+          'pending':     'Your request is in the queue. We\'ll begin reviewing it shortly.',
+          'in-review':   'We\'re reviewing your project brief and will get back to you soon.',
+          'accepted':    'Your project has been accepted. A deposit invoice will be sent to your email.',
+          'in-progress': 'Work has begun on your project. We\'ll keep you updated on progress.',
+          'completed':   'Your project is complete. Thank you for working with Jarumiri Studios.',
+        };
+      %>
+      <p class="text-xs text-gray-500 mt-5 pt-4 border-t border-white/5"><%= nextSteps[booking.status] %></p>
+      <% } %>
+    </div>
+
+    <!-- Two-column layout: main content (left) + status/actions sidebar (right) -->
+    <div class="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
+
+    <!-- Left: main content -->
+    <div class="space-y-5">
+
+    <!-- Project details -->
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-white mb-5">Project details</h2>
+      <div class="grid sm:grid-cols-2 gap-5">
+        <div>
+          <p class="field-label">Services</p>
+          <p class="field-value"><%= booking.serviceType.join(', ') %></p>
+        </div>
+        <div>
+          <p class="field-label">Package</p>
+          <p class="field-value">
+            <%= booking.pricingTier === 'Free' ? 'Clip' : booking.pricingTier %>
+            <% if (booking.pricingTier === 'Custom' && booking.budget) { %> — <%= booking.budget %><% } %>
+          </p>
+        </div>
+        <% if (booking.addOns && booking.addOns.length > 0) { %>
+        <div class="sm:col-span-2">
+          <p class="field-label">Add-ons</p>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <% booking.addOns.forEach(a => { %>
+            <span class="text-xs font-medium px-3 py-1 rounded-full bg-white/5 border border-white/8 text-gray-300"><%= a %></span>
+            <% }) %>
+          </div>
+        </div>
+        <% } %>
+        <% if (booking.location) { %>
+        <div>
+          <p class="field-label">Location</p>
+          <p class="field-value"><%= booking.location %></p>
+        </div>
+        <% } %>
+      </div>
+
+      <%
+        const FREE_TIER_EXCLUDED_ADDONS = ['Captions', 'Intro/outro bumper', 'Extra revision'];
+        const TIER_ADDON_MULTIPLIERS = { Scene: 1.5, Feature: 2.5 };
+        const isAddonAllowedForTier = (tier, addon) => !(tier === 'Free' && FREE_TIER_EXCLUDED_ADDONS.includes(addon));
+        const addonPriceForTier = (tier, addon) => ADDON_PRICES[addon] === undefined ? undefined : Math.ceil(ADDON_PRICES[addon] * (TIER_ADDON_MULTIPLIERS[tier] || 1));
+        if (booking.pricingTier !== 'Custom') {
+          const tierBase = TIER_PRICES[booking.pricingTier] || 0;
+          const addonSum = (booking.addOns || []).reduce((s, a) => s + (isAddonAllowedForTier(booking.pricingTier, a) ? (addonPriceForTier(booking.pricingTier, a) || 0) : 0), 0);
+          const tierLabel = booking.pricingTier === 'Free' ? 'Clip' : booking.pricingTier;
+          const baseLabel = (booking.pricingTier === 'Free' && tierBase === 0) ? 'Free' : `$${tierBase}`;
+      %>
+      <div class="mt-5 pt-5 border-t border-white/5">
+        <p class="field-label mb-3">Estimated total</p>
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-sm"><span class="text-gray-400"><%= tierLabel %> package</span><span class="text-gray-200"><%= baseLabel %></span></div>
+          <% (booking.addOns || []).forEach(a => { if (isAddonAllowedForTier(booking.pricingTier, a) && addonPriceForTier(booking.pricingTier, a)) { %>
+          <div class="flex justify-between text-sm"><span class="text-gray-500"><%= a %></span><span class="text-amber-400">+$<%= addonPriceForTier(booking.pricingTier, a) %></span></div>
+          <% } }) %>
+          <% (booking.couponCodes || []).forEach(c => { %>
+          <div class="flex justify-between text-sm"><span class="text-green-400"><%= c.code === 'WELCOME' ? 'Welcome discount' : `Coupon (${c.code})` %></span><span class="text-green-400">−$<%= c.amount.toFixed(2) %></span></div>
+          <% }) %>
+          <div class="flex justify-between text-sm pt-2 border-t border-white/5">
+            <span class="text-gray-400 font-medium">Total</span>
+            <span class="text-white font-semibold">$<%= (tierBase + addonSum - (booking.discountAmount || 0)).toFixed(2) %></span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Final price may vary based on project scope and complexity.</p>
+      </div>
+      <% } %>
+
+      <% if (booking.projectBrief) { %>
+      <div class="mt-5 pt-5 border-t border-white/5">
+        <p class="field-label">Project brief</p>
+        <p class="field-value whitespace-pre-wrap"><%= booking.projectBrief %></p>
+      </div>
+      <% } %>
+    </div>
+
+    <% if (booking.deliverablesUnlocked && booking.deliverableFiles && booking.deliverableFiles.length > 0) { %>
+    <div class="section-card" style="border-color: rgba(245,158,11,0.2);">
+      <h2 class="text-sm font-semibold text-white mb-1 flex items-center gap-2">
+        <span>Final deliverables</span>
+        <span class="inline-flex items-center justify-center text-[11px] font-semibold text-amber-300 bg-amber-400/15 rounded-full px-2 py-0.5"><%= booking.deliverableFiles.length %></span>
+      </h2>
+      <p class="text-xs text-gray-500 mb-4">Your finished files are ready — download them below.</p>
+      <div class="space-y-2">
+        <% booking.deliverableFiles.forEach(f => {
+          const url = '/dashboard/deliverables/' + f.storedName;
+          const isImage = /^image\//i.test(f.mimetype);
+          const isVideo = /^video\//i.test(f.mimetype);
+          const isAudio = /^audio\//i.test(f.mimetype);
+          const sizeLabel = f.size < 1024*1024 ? (f.size/1024).toFixed(1)+' KB' : (f.size/1024/1024).toFixed(1)+' MB';
+        %>
+        <div class="border border-white/5 rounded-md overflow-hidden">
+          <% if (isImage) { %>
+          <a href="<%= url %>" target="_blank">
+            <img src="<%= url %>" alt="<%= f.originalName %>" class="w-full max-h-72 object-contain bg-black/40" />
+          </a>
+          <% } else if (isVideo) { %>
+          <video controls preload="metadata" class="w-full max-h-72 bg-black">
+            <source src="<%= url %>" type="<%= f.mimetype %>">
+          </video>
+          <% } else if (isAudio) { %>
+          <div class="px-3 pt-3">
+            <audio controls class="w-full">
+              <source src="<%= url %>" type="<%= f.mimetype %>">
+            </audio>
+          </div>
+          <% } %>
+          <div class="flex items-center justify-between px-3 py-2.5 gap-3">
+            <span class="text-gray-300 text-sm truncate"><%= f.originalName %></span>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="text-gray-600 text-xs"><%= sizeLabel %></span>
+              <a href="<%= url %>" download="<%= f.originalName %>"
+                class="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors px-3 py-1 rounded-full border border-amber-400/30 hover:border-amber-400/60 whitespace-nowrap">
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (booking.uploadedFiles && booking.uploadedFiles.length > 0) { %>
+    <div class="section-card" style="padding: 16px;">
+      <button type="button" onclick="toggleCollapse('files-section')" class="w-full flex items-center justify-between gap-3 text-left cursor-pointer">
+        <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+          <span>Submitted files</span>
+          <span class="inline-flex items-center justify-center text-[11px] font-semibold text-gray-300 bg-white/8 rounded-full px-2 py-0.5"><%= booking.uploadedFiles.length %></span>
+        </h2>
+        <iconify-icon id="files-section-icon" icon="material-symbols-light:keyboard-arrow-up" width="20" height="20" class="text-gray-500 shrink-0"></iconify-icon>
+      </button>
+      <div id="files-section-body" class="mt-3 space-y-3">
+        <%
+          const FILE_GROUPS = [
+            { key: 'video', label: 'Video', test: f => /^video\//i.test(f.mimetype) },
+            { key: 'audio', label: 'Audio', test: f => /^audio\//i.test(f.mimetype) },
+            { key: 'image', label: 'Image', test: f => /^image\//i.test(f.mimetype) },
+            { key: 'other', label: 'Other', test: f => !/^(video|audio|image)\//i.test(f.mimetype) },
+          ];
+        %>
+        <% FILE_GROUPS.forEach(group => {
+          const groupFiles = booking.uploadedFiles.filter(group.test);
+          if (groupFiles.length === 0) return;
+          const groupId = 'filegroup-' + group.key;
+        %>
+        <div class="border border-white/5 rounded-md overflow-hidden">
+          <button type="button" onclick="toggleCollapse('<%= groupId %>')" class="w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-white/2 text-left cursor-pointer">
+            <span class="text-xs font-semibold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <span><%= group.label %></span>
+              <span class="inline-flex items-center justify-center text-[11px] font-semibold normal-case tracking-normal text-gray-300 bg-white/8 rounded-full px-2 py-0.5"><%= groupFiles.length %></span>
+            </span>
+            <iconify-icon id="<%= groupId %>-icon" icon="material-symbols-light:keyboard-arrow-down" width="18" height="18" class="text-gray-500 shrink-0"></iconify-icon>
+          </button>
+          <div id="<%= groupId %>-body" class="p-2 space-y-2" style="display:none;">
+            <% groupFiles.forEach(f => {
+              const url = '/dashboard/uploads/' + f.storedName;
+              const isImage = /^image\//i.test(f.mimetype);
+              const isVideo = /^video\//i.test(f.mimetype);
+              const isAudio = /^audio\//i.test(f.mimetype);
+              const sizeLabel = f.size < 1024*1024 ? (f.size/1024).toFixed(1)+' KB' : (f.size/1024/1024).toFixed(1)+' MB';
+            %>
+            <div class="border border-white/5 rounded-md overflow-hidden">
+              <% if (isImage) { %>
+              <a href="<%= url %>" target="_blank">
+                <img src="<%= url %>" alt="<%= f.originalName %>" class="w-full max-h-60 object-contain bg-black/40" />
+              </a>
+              <% } else if (isVideo) { %>
+              <video controls preload="metadata" class="w-full max-h-60 bg-black">
+                <source src="<%= url %>" type="<%= f.mimetype %>">
+              </video>
+              <% } else if (isAudio) { %>
+              <div class="px-3 pt-3">
+                <audio controls class="w-full">
+                  <source src="<%= url %>" type="<%= f.mimetype %>">
+                </audio>
+              </div>
+              <% } %>
+              <div class="flex items-center justify-between px-3 py-2 gap-3">
+                <span class="text-gray-300 text-sm truncate"><%= f.originalName %></span>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="text-gray-600 text-xs"><%= sizeLabel %></span>
+                  <a href="<%= url %>" download="<%= f.originalName %>"
+                    class="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors px-3 py-1 rounded-full border border-amber-400/30 hover:border-amber-400/60 whitespace-nowrap">
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
+            <% }) %>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <% const canAddFiles = !booking.archived && ['in-review', 'accepted', 'in-progress', 'paused'].includes(booking.status); %>
+    <% if (canAddFiles) { %>
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-white mb-1">Add files</h2>
+      <p class="text-xs text-gray-500 mb-4">Your project has moved past the initial review — you can now send over raw footage or additional reference files.</p>
+      <input type="file" id="extra-files-input" multiple accept="video/*,audio/*,image/*,.zip,.rar" class="hidden" />
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="button" onclick="document.getElementById('extra-files-input').click()"
+          class="flex-1 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-sm font-semibold hover:text-white hover:border-white/25 transition-colors cursor-pointer">
+          Choose files
+        </button>
+      </div>
+      <div id="extra-files-list" class="mt-3 space-y-2"></div>
+      <button type="button" id="extra-files-submit" onclick="uploadExtraFiles('<%= booking._id %>')" class="hidden w-full mt-3 px-5 py-2.5 rounded-full bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 text-sm font-semibold border border-amber-400/30 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+        Upload
+      </button>
+    </div>
+    <% } else if (!booking.archived && booking.status === 'pending') { %>
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-white mb-1">Add files</h2>
+      <p class="text-xs text-gray-500">We're reviewing your brief — once that's done, you'll be able to upload raw footage or reference files here, before any payment is due.</p>
+    </div>
+    <% } %>
+
+    <!-- Project actions: pause / nudge / delete -->
+    <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+      <% if (canManage && booking.status !== 'paused') { %>
+      <button type="button" onclick="pauseProject('<%= booking._id %>')"
+        class="w-full lg:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 text-sm font-semibold border border-amber-400/30 transition-colors cursor-pointer">
+        <iconify-icon icon="material-symbols-light:pause" width="17" height="17"></iconify-icon>
+        Pause project
+      </button>
+      <% } %>
+
+      <% if (canManage) { %>
+      <button type="button" onclick="nudgeAdmin('<%= booking._id %>', '<%= booking.crCode %>')"
+        class="w-full lg:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-indigo-400/15 hover:bg-indigo-400/25 text-indigo-300 text-sm font-semibold border border-indigo-400/30 transition-colors cursor-pointer">
+        <iconify-icon icon="material-symbols-light:notifications-active" width="17" height="17"></iconify-icon>
+        Send nudge
+      </button>
+      <% } %>
+
+      <form action="/dashboard/booking/<%= booking._id %>/delete" method="POST" class="w-full lg:w-auto"
+        onsubmit="return confirm('Delete this project? Uploaded files will be permanently removed. This cannot be undone.');">
+        <button type="submit"
+          class="w-full lg:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold transition-colors cursor-pointer">
+          <iconify-icon icon="material-symbols-light:delete" width="17" height="17"></iconify-icon>
+          Delete project
+        </button>
+      </form>
+    </div>
+
+    <% if (booking.mediaLinks && booking.mediaLinks.length > 0) { %>
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-white mb-4">Media links</h2>
+      <ul class="space-y-2">
+        <% booking.mediaLinks.forEach(link => { %>
+        <li><a href="<%= link %>" target="_blank" rel="noopener noreferrer" class="text-amber-400 text-sm hover:text-amber-300 break-all transition-colors"><%= link %></a></li>
+        <% }) %>
+      </ul>
+    </div>
+    <% } %>
+
+    <!-- Revision history -->
+    <% if (booking.revisions && booking.revisions.length > 0) { %>
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-white mb-4">Revision requests</h2>
+      <ul class="space-y-3">
+        <% booking.revisions.forEach(r => { %>
+        <li class="bg-white/2 border border-white/5 rounded-md px-4 py-3">
+          <p class="text-gray-300 text-sm whitespace-pre-wrap"><%= r.message %></p>
+          <div class="flex items-center justify-between mt-2">
+            <p class="text-gray-600 text-xs"><%= new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></p>
+            <% if (r.status === 'reviewed') { %>
+            <span class="text-xs text-green-400 font-medium">Reviewed</span>
+            <% } else { %>
+            <span class="text-xs text-amber-400 font-medium">Pending review</span>
+            <% } %>
+          </div>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
+    <% } %>
+
+    </div><!-- /left column -->
+
+    <!-- Right: status & actions sidebar -->
+    <div class="space-y-5 lg:sticky lg:top-5">
+
+    <!-- Messages -->
+    <div class="section-card">
+      <% if (booking.chatUnlocked) { %>
+      <a href="/dashboard/messages/<%= booking._id %>" class="flex items-center gap-2.5 text-sm text-gray-300 hover:text-white transition-colors">
+        <iconify-icon icon="material-symbols-light:chat-outline" width="18" height="18"></iconify-icon>
+        <span class="flex-1 font-semibold">Messages</span>
+        <% if (locals.bookingUnreadMessageCount > 0) { %>
+        <span style="display:flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;background:#f59e0b;color:#000;font-size:10px;font-weight:700;"><%= bookingUnreadMessageCount %></span>
+        <% } else { %>
+        <iconify-icon icon="material-symbols-light:chevron-right" width="18" height="18" class="text-gray-600"></iconify-icon>
+        <% } %>
+      </a>
+      <% } else { %>
+      <span title="Chat opens once this project is accepted." class="flex items-center gap-2.5 text-sm text-gray-400 opacity-40 cursor-not-allowed">
+        <iconify-icon icon="material-symbols-light:chat-outline" width="18" height="18"></iconify-icon>
+        <span class="flex-1 font-semibold">Messages</span>
+      </span>
+      <% } %>
+    </div>
+
+    <!-- Payment status (only show when relevant) -->
+    <% if (booking.depositStatus && booking.depositStatus !== 'none') {
+      const finalActive = booking.finalPaymentStatus && booking.finalPaymentStatus !== 'none';
+    %>
+    <div class="section-card">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-white">Payment</h2>
+        <% if (booking.agreedPrice) { %>
+        <span class="text-sm font-bold text-white">$<%= booking.agreedPrice.toLocaleString('en-US', { minimumFractionDigits: 2 }) %></span>
+        <% } %>
+      </div>
+      <div class="space-y-3">
+        <!-- Deposit -->
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ring-1 <%= booking.depositStatus === 'paid' ? 'bg-green-500/15 ring-green-500/25' : 'bg-amber-400/10 ring-amber-400/20' %>">
+              <% if (booking.depositStatus === 'paid') { %>
+              <iconify-icon icon="material-symbols-light:check" width="14" height="14" class="text-green-400"></iconify-icon>
+              <% } else { %>
+              <iconify-icon icon="material-symbols-light:schedule" width="14" height="14" class="text-amber-400"></iconify-icon>
+              <% } %>
+            </div>
+            <div>
+              <p class="text-sm text-white font-medium">Deposit (30%)</p>
+              <p class="text-xs text-gray-500">
+                <% if (booking.depositStatus === 'paid') { %>
+                  Paid — work has begun
+                <% } else if (booking.depositDueDate) { %>
+                  Due by <%= new Date(booking.depositDueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                <% } else { %>
+                  Invoice sent — check your email
+                <% } %>
+              </p>
+            </div>
+          </div>
+          <% if (booking.agreedPrice) { %>
+          <span class="text-sm font-semibold text-white shrink-0">$<%= (booking.agreedPrice * 0.30).toFixed(2) %></span>
+          <% } %>
+        </div>
+        <!-- Final (grayed out until the final invoice has actually been sent) -->
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ring-1 <%= booking.finalPaymentStatus === 'paid' ? 'bg-green-500/15 ring-green-500/25' : finalActive ? 'bg-amber-400/10 ring-amber-400/20' : 'bg-white/5 ring-white/10' %>">
+              <% if (booking.finalPaymentStatus === 'paid') { %>
+              <iconify-icon icon="material-symbols-light:check" width="14" height="14" class="text-green-400"></iconify-icon>
+              <% } else { %>
+              <iconify-icon icon="material-symbols-light:schedule" width="14" height="14" class="<%= finalActive ? 'text-amber-400' : 'text-gray-500' %>"></iconify-icon>
+              <% } %>
+            </div>
+            <div class="<%= finalActive ? '' : 'opacity-40' %>">
+              <p class="text-sm text-white font-medium">Final payment (70%)</p>
+              <p class="text-xs text-gray-500">
+                <% if (booking.finalPaymentStatus === 'paid') { %>
+                  Paid — project complete
+                <% } else if (booking.finalPaymentStatus === 'pending' && booking.finalDueDate) { %>
+                  Due by <%= new Date(booking.finalDueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                <% } else if (finalActive) { %>
+                  Invoice sent — check your email
+                <% } else { %>
+                  Once the deposit is paid
+                <% } %>
+              </p>
+            </div>
+          </div>
+          <% if (booking.agreedPrice) { %>
+          <span class="text-sm font-semibold text-white shrink-0 <%= finalActive ? '' : 'opacity-40' %>">$<%= (booking.agreedPrice * 0.70).toFixed(2) %></span>
+          <% } %>
+        </div>
+        <% if (booking.depositStatus === 'pending' && booking.depositInvoiceUrl) { %>
+        <a href="<%= booking.depositInvoiceUrl %>" target="_blank" rel="noopener" id="pay-deposit-link"
+          data-has-video="<%= (booking.uploadedFiles || []).some(f => f.mimetype && /^video\//i.test(f.mimetype)) ? 'true' : 'false' %>"
+          class="block text-center px-4 py-2.5 rounded-full bg-amber-400 text-black text-sm font-semibold hover:bg-amber-300 transition-colors">
+          Pay deposit now<% if (booking.agreedPrice) { %> — $<%= (booking.agreedPrice * 0.30).toFixed(2) %><% } %>
+        </a>
+        <% } else if (booking.finalPaymentStatus === 'pending' && booking.finalInvoiceUrl) { %>
+        <a href="<%= booking.finalInvoiceUrl %>" target="_blank" rel="noopener"
+          class="block text-center px-4 py-2.5 rounded-full bg-amber-400 text-black text-sm font-semibold hover:bg-amber-300 transition-colors">
+          Pay final invoice now<% if (booking.agreedPrice) { %> — $<%= (booking.agreedPrice * 0.70).toFixed(2) %><% } %>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Request a revision -->
+    <% if (!booking.archived && (booking.status === 'accepted' || booking.status === 'in-progress')) { %>
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-white mb-1">Request a revision</h2>
+      <p class="text-gray-500 text-xs mb-4">Describe what you'd like changed. We'll review it and follow up via Messages.</p>
+      <form action="/dashboard/booking/<%= booking._id %>/revision" method="POST">
+        <textarea name="message" rows="4" placeholder="Describe the revision you need..." required></textarea>
+        <button type="submit"
+          class="block w-full mt-3 px-6 py-3 rounded-full bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 text-sm font-semibold border border-amber-400/30 transition-colors">
+          Submit revision request
+        </button>
+      </form>
+    </div>
+    <% } else if (booking.status === 'pending' || booking.status === 'in-review') { %>
+    <div class="section-card text-center py-8">
+      <p class="text-gray-500 text-sm">Revision requests are available once your project is accepted.</p>
+    </div>
+    <% } %>
+
+    </div><!-- /right sidebar -->
+
+    </div><!-- /two-column grid -->
+
+  </main>
+  </div><!-- /lg:ml-[220px] -->
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    }
+
+    function toggleCollapse(id) {
+      const body = document.getElementById(id + '-body');
+      const icon = document.getElementById(id + '-icon');
+      const collapsed = body.style.display === 'none';
+      body.style.display = collapsed ? '' : 'none';
+      icon.setAttribute('icon', collapsed ? 'material-symbols-light:keyboard-arrow-up' : 'material-symbols-light:keyboard-arrow-down');
+    }
+
+    function pauseProject(id) {
+      if (!confirm('Pause this project? We\'ll hold off on further work until you resume.')) return;
+      fetch(`/dashboard/booking/${id}/pause`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(r => r.ok ? location.reload() : alert('Could not pause project.'))
+        .catch(() => alert('Could not pause project.'));
+    }
+
+    let extraFiles = []; // { file, url, kind: 'image'|'video'|'audio'|'other' }
+
+    function fmtFileSize(bytes) {
+      return bytes < 1024 * 1024 ? (bytes / 1024).toFixed(1) + ' KB' : (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+
+    function fmtDuration(seconds) {
+      if (!isFinite(seconds)) return '';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function onExtraMediaMeta(el, index) {
+      if (el.tagName === 'VIDEO') el.currentTime = 0.1; // seek off 0 so the thumbnail isn't a black frame
+      const durEl = document.getElementById(`extra-file-duration-${index}`);
+      if (durEl) {
+        const txt = fmtDuration(el.duration);
+        durEl.textContent = txt;
+        durEl.dataset.duration = txt;
+      }
+    }
+
+    function extraFileProgressEl(index) {
+      return document.getElementById(`extra-file-progress-${index}`);
+    }
+
+    function extraFileRemoveEl(index) {
+      return document.getElementById(`extra-file-remove-${index}`);
+    }
+
+    // While a batch upload is running, every row's × is locked except the one
+    // actively uploading, which becomes an Abort button (avoids index drift
+    // between the frozen upload queue and a mid-batch removal/re-render).
+    function disableExtraFileRemove(index) {
+      const el = extraFileRemoveEl(index);
+      if (!el) return;
+      el.onclick = null;
+      el.title = '';
+      el.classList.add('opacity-30', 'pointer-events-none');
+    }
+
+    function restoreExtraFileRemove(index) {
+      const el = extraFileRemoveEl(index);
+      if (!el) return;
+      el.onclick = () => removeExtraFile(index);
+      el.title = 'Remove';
+      el.classList.remove('opacity-30', 'pointer-events-none');
+    }
+
+    function setExtraFileAbortable(index, xhr) {
+      const el = extraFileRemoveEl(index);
+      if (!el) return;
+      el.onclick = () => xhr.abort();
+      el.title = 'Abort upload';
+      el.classList.remove('opacity-30', 'pointer-events-none');
+    }
+
+    function markExtraFileAborted(index) {
+      const durEl = document.getElementById(`extra-file-duration-${index}`);
+      if (durEl) {
+        durEl.textContent = 'Upload aborted';
+        durEl.classList.add('text-red-400');
+      }
+      const fillEl = extraFileProgressEl(index);
+      if (fillEl) fillEl.style.transform = 'scaleX(0)';
+    }
+
+    function clearExtraFileAborted(index) {
+      const durEl = document.getElementById(`extra-file-duration-${index}`);
+      if (durEl && durEl.dataset.duration !== undefined) {
+        durEl.textContent = durEl.dataset.duration;
+        durEl.classList.remove('text-red-400');
+      }
+    }
+
+    function renderExtraFilesList() {
+      document.getElementById('extra-files-submit').classList.toggle('hidden', extraFiles.length === 0);
+      document.getElementById('extra-files-list').innerHTML = extraFiles.map((entry, i) => {
+        const { file, url, kind } = entry;
+        const thumb = kind === 'image'
+          ? `<img src="${url}" class="w-full h-full object-cover" />`
+          : kind === 'video'
+          ? `<video src="${url}" muted preload="metadata" class="w-full h-full object-cover" onloadedmetadata="onExtraMediaMeta(this, ${i})"></video>`
+          : kind === 'audio'
+          ? `<iconify-icon icon="material-symbols-light:music-note-2" width="20" height="20" class="text-amber-400"></iconify-icon><audio src="${url}" preload="metadata" class="hidden" onloadedmetadata="onExtraMediaMeta(this, ${i})"></audio>`
+          : `<iconify-icon icon="material-symbols-light:description" width="18" height="18" class="text-gray-500"></iconify-icon>`;
+        return `
+        <div class="relative overflow-hidden rounded-md border border-white/8 bg-white/2">
+          <div id="extra-file-progress-${i}" class="absolute inset-0 bg-amber-400/10 origin-left transition-transform duration-150" style="transform: scaleX(0);"></div>
+          <div class="relative z-10 flex items-center gap-3 px-3 py-2">
+            <div class="w-14 h-10 rounded-md overflow-hidden bg-black/30 border border-white/10 flex items-center justify-center shrink-0">
+              ${thumb}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-gray-300 text-xs truncate">${file.name}</div>
+              <div id="extra-file-duration-${i}" class="text-gray-600 text-[11px] mt-0.5"></div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="text-gray-600 text-[11px]">${fmtFileSize(file.size)}</span>
+              <button type="button" id="extra-file-remove-${i}" onclick="removeExtraFile(${i})" title="Remove" class="text-gray-600 hover:text-red-400 transition-colors cursor-pointer">
+                <iconify-icon icon="material-symbols-light:close" width="14" height="14"></iconify-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
+    function removeExtraFile(index) {
+      const [removed] = extraFiles.splice(index, 1);
+      if (removed?.url) URL.revokeObjectURL(removed.url);
+      renderExtraFilesList();
+    }
+
+    document.getElementById('extra-files-input')?.addEventListener('change', (e) => {
+      const newEntries = Array.from(e.target.files).map(file => {
+        const isImage = /^image\//i.test(file.type);
+        const isVideo = /^video\//i.test(file.type);
+        const isAudio = /^audio\//i.test(file.type);
+        return {
+          file,
+          url: (isImage || isVideo || isAudio) ? URL.createObjectURL(file) : null,
+          kind: isImage ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'other',
+        };
+      });
+      extraFiles = extraFiles.concat(newEntries);
+      e.target.value = ''; // reset so choosing the same file again still fires 'change'
+      renderExtraFilesList();
+    });
+
+    function uploadExtraFiles(id) {
+      const files = extraFiles.map(entry => entry.file);
+      const total = files.length;
+      const btn = document.getElementById('extra-files-submit');
+      btn.disabled = true;
+      let uploadedCount = 0;
+
+      for (let i = 0; i < total; i++) disableExtraFileRemove(i);
+
+      function finish() {
+        for (let i = 0; i < total; i++) restoreExtraFileRemove(i);
+        btn.disabled = false;
+        btn.textContent = 'Upload';
+      }
+
+      function uploadOne(index) {
+        if (index >= total) {
+          finish();
+          if (uploadedCount > 0) {
+            showToast('Files uploaded', `${uploadedCount} file(s) added to your project.`);
+            setTimeout(() => location.reload(), 900);
+          }
+          return;
+        }
+
+        clearExtraFileAborted(index);
+        btn.textContent = `Uploading — ${index + 1}/${total} — 0%`;
+        const fillEl = extraFileProgressEl(index);
+        if (fillEl) fillEl.style.transform = 'scaleX(0)';
+
+        const fd = new FormData();
+        fd.append('files', files[index]);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/dashboard/booking/${id}/upload-files`);
+        setExtraFileAbortable(index, xhr);
+
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          const pct = Math.round((e.loaded / e.total) * 100);
+          btn.textContent = `Uploading — ${index + 1}/${total} — ${pct}%`;
+          if (fillEl) fillEl.style.transform = `scaleX(${pct / 100})`;
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            uploadedCount++;
+            if (fillEl) fillEl.style.transform = 'scaleX(1)';
+            disableExtraFileRemove(index);
+            uploadOne(index + 1);
+            return;
+          }
+          let message = 'Please try again.';
+          try { message = JSON.parse(xhr.responseText).error || message; } catch {}
+          showToast('Upload failed', message, 'error');
+          finish();
+        };
+        xhr.onabort = () => {
+          markExtraFileAborted(index);
+          disableExtraFileRemove(index);
+          uploadOne(index + 1);
+        };
+        xhr.onerror = () => {
+          showToast('Upload failed', 'Please try again.', 'error');
+          finish();
+        };
+        xhr.send(fd);
+      }
+
+      uploadOne(0);
+    }
+
+    (function () {
+      var payDepositLink = document.getElementById('pay-deposit-link');
+      if (payDepositLink && payDepositLink.dataset.hasVideo !== 'true') {
+        payDepositLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          showToast('Video required', 'Upload at least one video file before paying the deposit.', 'error');
+        });
+      }
+    }());
+
+    function nudgeAdmin(id, code) {
+      fetch(`/dashboard/booking/${id}/nudge`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(async r => {
+          if (r.ok) return showToast('Nudge sent!', `Admin has been notified about project ${code}.`);
+          if (r.status === 429) return alert((await r.json()).error);
+          alert('Could not send nudge.');
+        })
+        .catch(() => alert('Could not send nudge.'));
+    }
+  </script>
+  <%- include('../partials/toast') %>
+  <%- include('partials/notif-poll') %>
+</body>
+</html>

@@ -21,6 +21,47 @@
 - `npm run build`: Builds the minified CSS once.
 - `npm start`: Starts the server without nodemon.
 
+## File and Folder Structure
+**Hard rule:** Whenever you create, move or edit files, follow this layout. Put new code where it says, even if the project doesn't have that folder yet. If something has no place here, ask before adding a new top-level folder. Don't move existing files as a side effect of other work unless the user asks.
+
+```
+jarumiri_studios/
+├── server.js            App setup, Socket.IO attach, facades list, startup route map, 404 and error handlers
+├── AGENTS.md
+├── package.json, .env, .gitignore, jarumiri_studios.vbs
+├── .vscode/tasks.json   Runs `npm run tw` and `npm run dev` on folder open
+├── config/              Constants and settings: limits, pricing
+├── models/              Mongoose models, one per file, with the file fields they share in models/shared/
+├── routes/
+│   ├── public.js        Public pages, mounted at /
+│   ├── app.js           The client dashboard and its sign-in pages, mounted at /
+│   ├── admin.js         Admin section, mounted at /admin
+│   ├── associate.js     Extra section: editors, a separate signed-in role with its own login and URLs, mounted at /associate
+│   ├── api.js           JSON API, mounted at /api
+│   └── webhooks.js      Calls from outside services (Stripe), mounted at /webhooks, before the body parsers
+├── middleware/          Express middleware: sign-in, visitor cookie, submission quotas, uploads
+├── services/            Shared logic and outside services (email, payments, R2 and local storage, chat socket, expiry jobs)
+├── views/
+│   ├── partials/        Shared by more than one section: toast.ejs, confirm-modal.ejs, message-thread-script.ejs
+│   ├── public/          Public pages, with their own partials in public/partials/
+│   ├── app/             Client dashboard pages, with sign-in pages in app/auth/ and its own partials in app/partials/
+│   ├── admin/           Admin pages, with its own partials in admin/partials/
+│   └── associate/       Associate pages, with its own partials in associate/partials/
+├── src/input.css        Tailwind source, the only CSS file to edit
+├── public/
+│   ├── output.css       Built by Tailwind: never edit or commit it
+│   └── assets/          Images the site shows, served at /assets
+├── uploads/             Git-ignored local file storage, used when STORAGE_BACKEND=local; otherwise uploads go to Cloudflare R2
+├── scripts/             Scripts run by hand
+└── dev_resources/       Git-ignored and internal: journal, tasks, commit message, plans, screenshots, the DNS export
+```
+
+- **Routes:** Add each route to its section's file, with a line in that file's `router.routes` list (`{ method, path, label }`). No routes in `server.js`, and no new route file per feature. Logic that several routes share, or that calls an outside service, goes in `services/`. Mount routers through `middleware/skipOptions.js`, so OPTIONS requests keep reaching the 404 handler.
+- **Folder names:** No `utils/`, `lib/` or `helpers/`. Helpers go in `services/`, or in `middleware/` if they handle a request.
+- **Views:** Every page goes in its section's folder, never directly in `views/`. The folder already says the section, so name files for what they show: `views/admin/users.ejs`, not `views/admin-users.ejs`. A section's own partials go in its `partials/` folder; only what several sections share goes in `views/partials/`.
+- **Local-only files:** Notes, screenshots, logs, prompts, one-off scripts and source images go in `dev_resources/`, not the project root.
+- **Instruction files:** `AGENTS.md` is the only one. No `CLAUDE.md` or `.claude/` folder.
+
 
 ---
 

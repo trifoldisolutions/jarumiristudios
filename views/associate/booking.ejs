@@ -45,7 +45,7 @@
 </head>
 <body class="bg-[#080808] text-gray-100 antialiased min-h-screen">
 
-  <%- include('_sidebar', { active: 'dashboard' }) %>
+  <%- include('partials/sidebar', { active: 'dashboard' }) %>
 
   <div class="lg:ml-55 min-h-screen">
   <div class="lg:hidden h-14"></div>
@@ -314,7 +314,7 @@
         <% } %>
 
         <!-- Messages -->
-        <%- include('_message-thread-panel') %>
+        <%- include('partials/message-thread-panel') %>
 
       </div>
 
@@ -534,9 +534,9 @@
     }
   </script>
 
-  <%- include('../_toast') %>
-  <%- include('_message-poll') %>
-  <%- include('_notif-poll') %>
+  <%- include('../partials/toast') %>
+  <%- include('partials/message-poll') %>
+  <%- include('partials/notif-poll') %>
   <% if (locals.delivered) { %>
   <script>showToast('Files uploaded', '<%= delivered %> file<%= delivered === 1 ? "" : "s" %> uploaded.');</script>
   <% } %>

@@ -70,7 +70,7 @@
       btn.style.color = showing ? '#6b7280' : '#f59e0b';
     }
   </script>
-  <%- include('../_toast') %>
+  <%- include('../partials/toast') %>
   <% if (locals.error) { %>
   <script>showToast('Login failed', <%- JSON.stringify(error) %>, 'error');</script>
   <% } %>

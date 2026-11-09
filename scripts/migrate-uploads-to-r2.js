@@ -11,7 +11,7 @@ require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
-const { streamUpload, headObject } = require("../lib/r2");
+const { streamUpload, headObject } = require("../services/r2");
 const BookingRequest = require("../models/BookingRequest");
 const Message = require("../models/Message");
 
