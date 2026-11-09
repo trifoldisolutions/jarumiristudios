@@ -96,6 +96,16 @@ const upload = multer({
   limits: { fileSize: MEMBER_MAX_FILE_SIZE },
   fileFilter: restrictToAllowedMediaTypes,
 });
+// For a booking turned down after multer has already stored its files (see enforceFreeTierGates).
+function discardUploadedFiles(req) {
+  return Promise.all((req.files || []).map((file) => new Promise((resolve) => {
+    upload.storage._removeFile(req, file, (err) => {
+      if (err) console.error("Error removing an uploaded file:", err.message);
+      resolve();
+    });
+  })));
+}
+
 // Admin-uploaded final deliverables — separate multer instance so they never mix with client-submitted raw files.
 const deliverableUpload = multer({
   storage: USE_LOCAL_STORAGE ? createLocalStorage(undefined, deliverableDiskFolder) : createR2Storage(undefined, deliverableDiskFolder),
@@ -146,4 +156,4 @@ async function attachCrCodeForClient(req, res, next) {
   next();
 }
 
-module.exports = { preCrCode, preAppCode, upload, deliverableUpload, chatUpload, applicationUpload, attachCrCode, attachCrCodeForClient };
+module.exports = { preCrCode, preAppCode, upload, discardUploadedFiles, deliverableUpload, chatUpload, applicationUpload, attachCrCode, attachCrCodeForClient };

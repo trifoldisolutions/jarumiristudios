@@ -1,6 +1,7 @@
 const BookingRequest = require("../models/BookingRequest");
 const User = require("../models/User");
 const Application = require("../models/Application");
+const { discardUploadedFiles } = require("./upload");
 const { hasCompletedProjectHistory } = require("../services/bookings");
 const { GUEST_SUBMISSION_WINDOW_MS, FREE_TIER_SUBMISSION_WINDOW_MS, APPLICATION_SUBMISSION_WINDOW_MS } = require("../config/limits");
 
@@ -26,11 +27,13 @@ async function enforceGuestSubmissionQuota(req, res, next) {
 }
 
 // Free tier requires an account (so the weekly cap and testimonial/gallery-rights obligation
-// below are tied to a real client record, not a clearable cookie). Runs before preCrCode/multer
-// so a blocked submission costs nothing, same rationale as enforceGuestSubmissionQuota above.
+// below are tied to a real client record, not a clearable cookie). Runs after multer, because the
+// booking forms post multipart and pricingTier can't be read until multer has parsed them, so any
+// files already received for a blocked submission are removed again.
 async function enforceFreeTierGates(req, res, next) {
   if (req.body.pricingTier !== "Free") return next();
   if (!req.session.userId) {
+    await discardUploadedFiles(req);
     return res.render("public/hire", {
       error: "The Clip tier requires a free account — sign up or log in first.",
       needsSignup: true,
@@ -42,6 +45,7 @@ async function enforceFreeTierGates(req, res, next) {
   }
   const user = await User.findById(req.session.userId);
   if (user?.pendingTestimonialObligation) {
+    await discardUploadedFiles(req);
     return res.render("public/hire", {
       error: "Please submit a testimonial or grant gallery rights for your previous Clip project before submitting another.",
       formData: req.body,
@@ -53,6 +57,7 @@ async function enforceFreeTierGates(req, res, next) {
   const since = new Date(Date.now() - FREE_TIER_SUBMISSION_WINDOW_MS);
   const recent = await BookingRequest.exists({ clientId: req.session.userId, pricingTier: "Free", createdAt: { $gte: since } });
   if (recent) {
+    await discardUploadedFiles(req);
     return res.render("public/hire", {
       error: "You can submit one Clip project per week. Please try again later.",
       formData: req.body,

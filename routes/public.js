@@ -141,7 +141,7 @@ router.post("/hire/coupon/validate", async (req, res) => {
   });
 });
 
-router.post("/hire", enforceGuestSubmissionQuota, enforceFreeTierGates, preCrCode, async (req, res, next) => {
+router.post("/hire", enforceGuestSubmissionQuota, preCrCode, async (req, res, next) => {
   const canUploadNow = await hasCompletedProjectHistory(req.session.userId, req.visitorId);
   req.canUploadNow = canUploadNow;
   const maxFiles = canUploadNow ? MEMBER_MAX_FILES : 0;
@@ -156,7 +156,7 @@ router.post("/hire", enforceGuestSubmissionQuota, enforceFreeTierGates, preCrCod
       : err.message || "Upload failed.";
     return res.render("public/hire", { error: message, formData: req.body, loggedInUser: null, lastBooking: null, canUploadNow });
   });
-}, async (req, res) => {
+}, enforceFreeTierGates, async (req, res) => {
   const { name, email, location, clientType, pricingTier, budget, projectBrief } = req.body;
   const serviceType = [].concat(req.body.serviceType || []).filter(Boolean);
   const mediaLinks  = [].concat(req.body.mediaLinks  || []).filter(Boolean);
